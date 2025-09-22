@@ -138,8 +138,8 @@ class TetrisGame {
         const gameBoard = document.querySelector('.game-board');
         if (!gameBoard) return;
         
-        const containerWidth = gameBoard.clientWidth - 20; // Account for padding
-        const containerHeight = gameBoard.clientHeight - 20; // Account for padding
+        const containerWidth = gameBoard.clientWidth - 30; // Account for padding
+        const containerHeight = gameBoard.clientHeight - 30; // Account for padding
         
         // Calculate optimal canvas size for 4:3 aspect ratio
         const targetAspectRatio = 4 / 3;
@@ -246,7 +246,7 @@ class TetrisGame {
         
         // Keyboard events
         document.addEventListener('keydown', (e) => {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
                 e.preventDefault();
             }
             this.handleKeyPress(e);
@@ -395,10 +395,7 @@ class TetrisGame {
                 this.sounds.lead();
                 this.rotatePiece();
                 break;
-            case 'Space':
-                this.sounds.kick();
-                this.hardDrop();
-                break;
+            // Hard drop removed
         }
     }
     
@@ -462,12 +459,21 @@ class TetrisGame {
             this.currentPiece.y += dy;
             this.draw();
             
-            // Add juice for movement
+            // Enhanced juice for movement
             if (dx !== 0) {
                 this.addScreenShake(0.5);
+                this.gameBoard.classList.add('pulse');
+                setTimeout(() => this.gameBoard.classList.remove('pulse'), 200);
             }
         } else if (dy > 0) {
+            // Add visual feedback for failed downward movement
+            this.gameContainer.classList.add('shake');
+            setTimeout(() => this.gameContainer.classList.remove('shake'), 300);
             this.placePiece();
+        } else {
+            // Add visual feedback for failed horizontal movement
+            this.gameContainer.classList.add('shake');
+            setTimeout(() => this.gameContainer.classList.remove('shake'), 200);
         }
     }
     
@@ -482,9 +488,15 @@ class TetrisGame {
         
         if (this.checkCollision(this.currentPiece, 0, 0)) {
             this.currentPiece.shape = originalShape;
+            // Add visual feedback for failed rotation
+            this.gameContainer.classList.add('shake');
+            setTimeout(() => this.gameContainer.classList.remove('shake'), 200);
         } else {
             this.draw();
             this.addScreenShake(0.3);
+            // Add enhanced visual feedback for successful rotation
+            this.gameBoard.classList.add('pulse');
+            setTimeout(() => this.gameBoard.classList.remove('pulse'), 300);
         }
     }
     
@@ -533,11 +545,16 @@ class TetrisGame {
             }
         }
         
+        // Enhanced visual feedback for piece placement
         this.addScreenShake(0.7);
+        this.gameBoard.classList.add('flash');
+        setTimeout(() => this.gameBoard.classList.remove('flash'), 400);
+        
+        // Enhanced particle effects
         this.createSnazzyParticles(
             this.canvas.offsetLeft + this.canvas.width / 2,
             this.canvas.offsetTop + this.canvas.height / 2,
-            10
+            15
         );
         
         this.clearLines();
@@ -599,9 +616,25 @@ class TetrisGame {
      * Update display elements
      */
     updateDisplay() {
-        document.getElementById('score').textContent = this.score.toString().padStart(7, '0');
-        document.getElementById('level').textContent = this.level.toString().padStart(2, '0');
-        document.getElementById('lines').textContent = this.lines.toString().padStart(3, '0');
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const linesElement = document.getElementById('lines');
+        
+        scoreElement.textContent = this.score.toString().padStart(7, '0');
+        levelElement.textContent = this.level.toString().padStart(2, '0');
+        linesElement.textContent = this.lines.toString().padStart(3, '0');
+        
+        // Add visual emphasis to score changes
+        scoreElement.classList.add('animate');
+        setTimeout(() => scoreElement.classList.remove('animate'), 600);
+        
+        // Add glow effect to level changes
+        if (this.level > 1) {
+            levelElement.style.textShadow = '0 0 20px #00ff00, 0 0 40px #00ff00';
+            setTimeout(() => {
+                levelElement.style.textShadow = '0 0 10px #ffffff, 0 0 20px #ffffff';
+            }, 1000);
+        }
     }
     
     /**
