@@ -7,9 +7,19 @@ class TetrisGame {
     constructor() {
         // Canvas and rendering
         this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
         this.nextCanvas = document.getElementById('nextCanvas');
+        
+        if (!this.canvas || !this.nextCanvas) {
+            console.error('Canvas elements not found!');
+            return;
+        }
+        
+        this.ctx = this.canvas.getContext('2d');
         this.nextCtx = this.nextCanvas.getContext('2d');
+        
+        // Set canvas properties
+        this.ctx.imageSmoothingEnabled = false;
+        this.nextCtx.imageSmoothingEnabled = false;
         
         // Game constants
         this.BOARD_WIDTH = 10;
@@ -55,14 +65,14 @@ class TetrisGame {
                     [1, 1, 1],
                     [0, 0, 0]
                 ],
-                color: '#800080' // T piece
+                color: '#ffffff' // T piece - white
             },
             {
                 shape: [
                     [1, 1],
                     [1, 1]
                 ],
-                color: '#ffff00' // O piece
+                color: '#ffffff' // O piece - white
             },
             {
                 shape: [
@@ -70,7 +80,7 @@ class TetrisGame {
                     [1, 1, 0],
                     [0, 0, 0]
                 ],
-                color: '#00ff00' // S piece
+                color: '#ffffff' // S piece - white
             },
             {
                 shape: [
@@ -78,7 +88,7 @@ class TetrisGame {
                     [0, 1, 1],
                     [0, 0, 0]
                 ],
-                color: '#ff0000' // Z piece
+                color: '#ffffff' // Z piece - white
             },
             {
                 shape: [
@@ -86,7 +96,7 @@ class TetrisGame {
                     [1, 1, 1],
                     [0, 0, 0]
                 ],
-                color: '#ffa500' // J piece
+                color: '#ffffff' // J piece - white
             },
             {
                 shape: [
@@ -94,13 +104,13 @@ class TetrisGame {
                     [1, 1, 1],
                     [0, 0, 0]
                 ],
-                color: '#0000ff' // L piece
+                color: '#ffffff' // L piece - white
             },
             {
                 shape: [
                     [1, 1, 1, 1]
                 ],
-                color: '#00ffff' // I piece
+                color: '#ffffff' // I piece - white
             }
         ];
         
@@ -113,14 +123,18 @@ class TetrisGame {
     init() {
         this.setupEventListeners();
         this.setupResponsiveCanvas();
-        this.generateNextPiece();
-        this.spawnPiece();
-        this.updateDisplay();
-        this.draw();
+        
+        // Only initialize game pieces if we're on the game screen
+        if (this.gameScreen && !this.gameScreen.classList.contains('hidden')) {
+            this.generateNextPiece();
+            this.spawnPiece();
+            this.updateDisplay();
+            this.draw();
+        }
         
         // Debug: Log next piece info
-        console.log('Next piece generated:', this.nextPiece);
-        console.log('Next canvas size:', this.nextCanvas.width, 'x', this.nextCanvas.height);
+        console.log('Game initialized');
+        console.log('Canvas size:', this.canvas.width, 'x', this.canvas.height);
     }
     
     /**
@@ -136,11 +150,23 @@ class TetrisGame {
      */
     resizeCanvas() {
         const gameBoard = document.querySelector('.game-board');
-        if (!gameBoard) return;
+        if (!gameBoard) {
+            // Fallback to canvas parent if game board not found
+            const canvasParent = this.canvas.parentElement;
+            if (!canvasParent) return;
+            
+            const containerWidth = canvasParent.clientWidth - 30;
+            const containerHeight = canvasParent.clientHeight - 30;
+            this.resizeCanvasWithDimensions(containerWidth, containerHeight);
+            return;
+        }
         
         const containerWidth = gameBoard.clientWidth - 30; // Account for padding
         const containerHeight = gameBoard.clientHeight - 30; // Account for padding
-        
+        this.resizeCanvasWithDimensions(containerWidth, containerHeight);
+    }
+    
+    resizeCanvasWithDimensions(containerWidth, containerHeight) {
         // Calculate optimal canvas size for 4:3 aspect ratio
         const targetAspectRatio = 4 / 3;
         const containerAspectRatio = containerWidth / containerHeight;
@@ -641,8 +667,13 @@ class TetrisGame {
      * Main draw function
      */
     draw() {
+        if (!this.ctx || !this.canvas) {
+            console.error('Canvas context not available');
+            return;
+        }
+        
         // Clear canvas
-        this.ctx.fillStyle = '#000';
+        this.ctx.fillStyle = '#000000';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
         // Draw board
@@ -683,6 +714,13 @@ class TetrisGame {
         
         // Draw grid
         this.drawGrid();
+        
+        // Debug: Draw a test block to verify rendering
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, this.BLOCK_SIZE, this.BLOCK_SIZE);
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(0, 0, this.BLOCK_SIZE, this.BLOCK_SIZE);
     }
     
     /**
@@ -967,20 +1005,34 @@ class TetrisGame {
     }
     
     showGameScreen() {
+        console.log('Showing game screen...');
+        
         this.mainMenu.classList.add('hidden');
         this.gameScreen.classList.remove('hidden');
         this.gameOverScreen.classList.add('hidden');
+        
+        // Resize canvas first
         this.resizeCanvas();
         this.canvas.focus();
         
+        console.log('Canvas resized:', this.canvas.width, 'x', this.canvas.height);
+        console.log('Block size:', this.BLOCK_SIZE);
+        
         // Reset game state when showing game screen
         this.resetGame();
-        this.startGame();
         
-        // Ensure next piece is drawn
-        setTimeout(() => {
-            this.drawNextPiece();
-        }, 100);
+        // Initialize game pieces
+        this.generateNextPiece();
+        this.spawnPiece();
+        this.updateDisplay();
+        this.draw();
+        this.drawNextPiece();
+        
+        console.log('Current piece:', this.currentPiece);
+        console.log('Next piece:', this.nextPiece);
+        
+        // Start the game
+        this.startGame();
     }
     
     showInstructions() {
