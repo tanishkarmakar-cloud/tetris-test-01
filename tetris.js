@@ -134,8 +134,8 @@ class TetrisGame {
         const gameViewport = document.querySelector('.game-viewport');
         if (!gameViewport) return;
         
-        const containerWidth = gameViewport.clientWidth - 40;
-        const containerHeight = gameViewport.clientHeight - 40;
+        const containerWidth = gameViewport.clientWidth - 20; // Reduced padding
+        const containerHeight = gameViewport.clientHeight - 20; // Reduced padding
         
         // Calculate optimal canvas size for 4:3 aspect ratio
         const targetAspectRatio = 4 / 3;
@@ -155,14 +155,29 @@ class TetrisGame {
         canvasWidth = Math.floor(canvasWidth);
         canvasHeight = Math.floor(canvasHeight);
 
-        // Set canvas size
-        this.canvas.width = canvasWidth;
-        this.canvas.height = canvasHeight;
-        this.canvas.style.width = canvasWidth + 'px';
-        this.canvas.style.height = canvasHeight + 'px';
+        // Calculate block size first
+        this.BLOCK_SIZE = Math.floor(canvasWidth / this.BOARD_WIDTH);
         
-        // Update block size
-        this.BLOCK_SIZE = canvasWidth / this.BOARD_WIDTH;
+        // Recalculate canvas size based on actual block size to ensure perfect fit
+        const actualCanvasWidth = this.BLOCK_SIZE * this.BOARD_WIDTH;
+        const actualCanvasHeight = this.BLOCK_SIZE * this.BOARD_HEIGHT;
+        
+        // Ensure the canvas fits within the container
+        if (actualCanvasWidth > containerWidth) {
+            this.BLOCK_SIZE = Math.floor(containerWidth / this.BOARD_WIDTH);
+        }
+        if (actualCanvasHeight > containerHeight) {
+            this.BLOCK_SIZE = Math.floor(containerHeight / this.BOARD_HEIGHT);
+        }
+        
+        // Final canvas dimensions
+        const finalCanvasWidth = this.BLOCK_SIZE * this.BOARD_WIDTH;
+        const finalCanvasHeight = this.BLOCK_SIZE * this.BOARD_HEIGHT;
+        
+        this.canvas.width = finalCanvasWidth;
+        this.canvas.height = finalCanvasHeight;
+        this.canvas.style.width = finalCanvasWidth + 'px';
+        this.canvas.style.height = finalCanvasHeight + 'px';
         
         // Resize next piece canvas
         this.resizeNextCanvas();
@@ -901,6 +916,9 @@ class TetrisGame {
         this.gameOverScreen.classList.add('hidden');
         this.resizeCanvas();
         this.canvas.focus();
+        
+        // Reset game state when showing game screen
+        this.resetGame();
         this.startGame();
     }
     
