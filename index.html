@@ -5,29 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Retro Tetris</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- CRT Scanlines Effect -->
-    <div class="scanlines"></div>
+    <!-- Terminal Effects -->
+    <div class="terminal-overlay">
+        <div class="scanlines"></div>
+        <div class="terminal-grid"></div>
+        <div class="terminal-glow"></div>
+    </div>
     
     <!-- Main Menu Screen -->
     <div id="mainMenu" class="main-menu">
-        <div class="menu-container">
-            <div class="retro-title">
-                <h1 class="title-text">TETRIS</h1>
-                <div class="title-subtitle">CLASSIC ARCADE</div>
+        <div class="terminal-frame">
+            <div class="terminal-header">
+                <div class="terminal-lights">
+                    <div class="light red"></div>
+                    <div class="light yellow"></div>
+                    <div class="light green"></div>
+                </div>
+                <div class="terminal-title">SYSTEM TERMINAL v2.1.7</div>
+                <div class="terminal-status">ONLINE</div>
             </div>
             
-            <div class="menu-buttons">
-                <button id="playBtn" class="pixel-btn">PLAY GAME</button>
-                <button id="instructionsBtn" class="pixel-btn secondary">INSTRUCTIONS</button>
-                <button id="highScoresBtn" class="pixel-btn secondary">HIGH SCORES</button>
-            </div>
-            
-            <div class="retro-decoration">
-                <div class="pixel-border"></div>
+            <div class="menu-container">
+                <div class="terminal-title-section">
+                    <h1 class="title-text">TETRIS</h1>
+                    <div class="title-subtitle">SPACESHIP DEFENSE MODULE</div>
+                    <div class="terminal-subtitle">CLASSIFICATION: GAME.EXE</div>
+                </div>
+                
+                <div class="menu-buttons">
+                    <button id="playBtn" class="terminal-btn primary">
+                        <span class="btn-icon">▶</span>
+                        <span class="btn-text">INITIATE GAME</span>
+                    </button>
+                    <button id="instructionsBtn" class="terminal-btn secondary">
+                        <span class="btn-icon">ℹ</span>
+                        <span class="btn-text">SYSTEM MANUAL</span>
+                    </button>
+                    <button id="highScoresBtn" class="terminal-btn secondary">
+                        <span class="btn-icon">📊</span>
+                        <span class="btn-text">MISSION LOG</span>
+                    </button>
+                </div>
+                
+                <div class="terminal-footer">
+                    <div class="terminal-info">
+                        <span>STATUS: READY</span>
+                        <span>POWER: 100%</span>
+                        <span>SYSTEM: STABLE</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -68,31 +99,48 @@
 
     <!-- Game Screen -->
     <div id="gameScreen" class="game-screen hidden">
-        <div class="game-container">
-            <div class="game-header">
-                <div class="header-left">
-                    <button id="backToMenu" class="pixel-btn secondary">← MENU</button>
+        <div class="terminal-frame">
+            <div class="terminal-header">
+                <div class="terminal-lights">
+                    <div class="light red"></div>
+                    <div class="light yellow"></div>
+                    <div class="light green"></div>
                 </div>
-                <div class="header-center">
-                    <h1 class="game-title">TETRIS</h1>
-                </div>
-                <div class="header-right">
-                    <div class="score-display">
-                        <div class="score-item">
-                            <span class="score-label">SCORE</span>
-                            <span id="score" class="score-value">0</span>
-                        </div>
-                        <div class="score-item">
-                            <span class="score-label">LEVEL</span>
-                            <span id="level" class="score-value">1</span>
-                        </div>
-                        <div class="score-item">
-                            <span class="score-label">LINES</span>
-                            <span id="lines" class="score-value">0</span>
+                <div class="terminal-title">TETRIS DEFENSE MODULE</div>
+                <div class="terminal-status">ACTIVE</div>
+            </div>
+            
+            <div class="game-container">
+                <div class="game-header">
+                    <div class="header-left">
+                        <button id="backToMenu" class="terminal-btn secondary">
+                            <span class="btn-icon">←</span>
+                            <span class="btn-text">MAIN MENU</span>
+                        </button>
+                    </div>
+                    <div class="header-center">
+                        <h1 class="game-title">TETRIS</h1>
+                        <div class="game-subtitle">DEFENSE MODULE ACTIVE</div>
+                    </div>
+                    <div class="header-right">
+                        <div class="score-display">
+                            <div class="score-panel">
+                                <div class="score-item">
+                                    <span class="score-label">SCORE</span>
+                                    <span id="score" class="score-value">0000000</span>
+                                </div>
+                                <div class="score-item">
+                                    <span class="score-label">LEVEL</span>
+                                    <span id="level" class="score-value">01</span>
+                                </div>
+                                <div class="score-item">
+                                    <span class="score-label">LINES</span>
+                                    <span id="lines" class="score-value">000</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
             
             <div class="game-main">
                 <div class="game-area">
@@ -100,31 +148,37 @@
                         <canvas id="gameCanvas"></canvas>
                     </div>
                     <div class="game-sidebar">
-                        <div class="next-piece-panel">
-                            <h3>NEXT</h3>
+                        <div class="terminal-panel next-piece-panel">
+                            <div class="panel-header">
+                                <div class="panel-title">NEXT BLOCK</div>
+                                <div class="panel-status">READY</div>
+                            </div>
                             <div class="next-piece-container">
                                 <canvas id="nextCanvas"></canvas>
                             </div>
                         </div>
                         
-                        <div class="controls-panel">
-                            <h3>CONTROLS</h3>
+                        <div class="terminal-panel controls-panel">
+                            <div class="panel-header">
+                                <div class="panel-title">CONTROLS</div>
+                                <div class="panel-status">ACTIVE</div>
+                            </div>
                             <div class="controls-grid-small">
                                 <div class="control-row">
                                     <span class="key">← →</span>
-                                    <span class="action">Move</span>
+                                    <span class="action">LATERAL MOVEMENT</span>
                                 </div>
                                 <div class="control-row">
                                     <span class="key">↓</span>
-                                    <span class="action">Drop</span>
+                                    <span class="action">SOFT DROP</span>
                                 </div>
                                 <div class="control-row">
                                     <span class="key">↑</span>
-                                    <span class="action">Rotate</span>
+                                    <span class="action">ROTATION</span>
                                 </div>
                                 <div class="control-row">
                                     <span class="key">SPACE</span>
-                                    <span class="action">Hard Drop</span>
+                                    <span class="action">HARD DROP</span>
                                 </div>
                             </div>
                         </div>
@@ -133,9 +187,18 @@
                 
                 <div class="game-controls">
                     <div class="control-buttons">
-                        <button id="startBtn" class="pixel-btn start">START</button>
-                        <button id="pauseBtn" class="pixel-btn pause">PAUSE</button>
-                        <button id="resetBtn" class="pixel-btn reset">RESET</button>
+                        <button id="startBtn" class="terminal-btn primary">
+                            <span class="btn-icon">▶</span>
+                            <span class="btn-text">START MISSION</span>
+                        </button>
+                        <button id="pauseBtn" class="terminal-btn secondary">
+                            <span class="btn-icon">⏸</span>
+                            <span class="btn-text">PAUSE</span>
+                        </button>
+                        <button id="resetBtn" class="terminal-btn danger">
+                            <span class="btn-icon">⏹</span>
+                            <span class="btn-text">RESET</span>
+                        </button>
                     </div>
                 </div>
             </div>

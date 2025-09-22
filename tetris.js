@@ -403,33 +403,68 @@ class TetrisGame {
         // Enable pixel-perfect rendering
         this.ctx.imageSmoothingEnabled = false;
         
-        // Draw main block
-        this.ctx.fillStyle = color;
+        // Create gradient for spaceship terminal effect
+        const gradient = this.ctx.createLinearGradient(pixelX, pixelY, pixelX + this.BLOCK_SIZE, pixelY + this.BLOCK_SIZE);
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(0.5, this.lightenColor(color, 20));
+        gradient.addColorStop(1, this.darkenColor(color, 20));
+        
+        // Draw main block with gradient
+        this.ctx.fillStyle = gradient;
         this.ctx.fillRect(pixelX, pixelY, this.BLOCK_SIZE, this.BLOCK_SIZE);
         
-        // Add pixel art border with highlight and shadow
-        this.ctx.strokeStyle = '#00ff00';
+        // Add spaceship terminal border
+        this.ctx.strokeStyle = '#00d4ff';
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(pixelX, pixelY, this.BLOCK_SIZE, this.BLOCK_SIZE);
         
-        // Add inner highlight
+        // Add inner glow
         this.ctx.strokeStyle = '#00ffff';
         this.ctx.lineWidth = 1;
         this.ctx.strokeRect(pixelX + 1, pixelY + 1, this.BLOCK_SIZE - 2, this.BLOCK_SIZE - 2);
         
-        // Add pixel art shading
-        this.ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+        // Add terminal-style highlights
+        this.ctx.fillStyle = 'rgba(0, 212, 255, 0.4)';
         this.ctx.fillRect(pixelX + 2, pixelY + 2, this.BLOCK_SIZE - 4, 2);
         
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        // Add terminal-style shadows
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         this.ctx.fillRect(pixelX + 2, pixelY + this.BLOCK_SIZE - 4, this.BLOCK_SIZE - 4, 2);
+        
+        // Add corner highlights for terminal effect
+        this.ctx.fillStyle = 'rgba(0, 255, 255, 0.6)';
+        this.ctx.fillRect(pixelX + 1, pixelY + 1, 2, 2);
+        this.ctx.fillRect(pixelX + this.BLOCK_SIZE - 3, pixelY + 1, 2, 2);
+    }
+    
+    lightenColor(color, percent) {
+        const num = parseInt(color.replace("#", ""), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = (num >> 16) + amt;
+        const G = (num >> 8 & 0x00FF) + amt;
+        const B = (num & 0x0000FF) + amt;
+        return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+            (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+            (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+    }
+    
+    darkenColor(color, percent) {
+        const num = parseInt(color.replace("#", ""), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = (num >> 16) - amt;
+        const G = (num >> 8 & 0x00FF) - amt;
+        const B = (num & 0x0000FF) - amt;
+        return "#" + (0x1000000 + (R > 255 ? 255 : R < 0 ? 0 : R) * 0x10000 +
+            (G > 255 ? 255 : G < 0 ? 0 : G) * 0x100 +
+            (B > 255 ? 255 : B < 0 ? 0 : B)).toString(16).slice(1);
     }
     
     drawGrid() {
         // Enable pixel-perfect rendering
         this.ctx.imageSmoothingEnabled = false;
         
-        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
+        // Draw spaceship terminal grid
+        this.ctx.strokeStyle = 'rgba(0, 212, 255, 0.2)';
         this.ctx.lineWidth = 1;
         
         // Vertical lines
@@ -448,10 +483,22 @@ class TetrisGame {
             this.ctx.stroke();
         }
         
-        // Add corner highlights for retro effect
-        this.ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
-        this.ctx.lineWidth = 2;
+        // Add spaceship terminal border with glow
+        this.ctx.strokeStyle = '#00d4ff';
+        this.ctx.lineWidth = 3;
         this.ctx.strokeRect(0, 0, this.BOARD_WIDTH * this.BLOCK_SIZE, this.BOARD_HEIGHT * this.BLOCK_SIZE);
+        
+        // Add inner glow border
+        this.ctx.strokeStyle = 'rgba(0, 255, 255, 0.6)';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(1, 1, this.BOARD_WIDTH * this.BLOCK_SIZE - 2, this.BOARD_HEIGHT * this.BLOCK_SIZE - 2);
+        
+        // Add corner highlights for terminal effect
+        this.ctx.fillStyle = 'rgba(0, 255, 255, 0.8)';
+        this.ctx.fillRect(0, 0, 4, 4);
+        this.ctx.fillRect(this.BOARD_WIDTH * this.BLOCK_SIZE - 4, 0, 4, 4);
+        this.ctx.fillRect(0, this.BOARD_HEIGHT * this.BLOCK_SIZE - 4, 4, 4);
+        this.ctx.fillRect(this.BOARD_WIDTH * this.BLOCK_SIZE - 4, this.BOARD_HEIGHT * this.BLOCK_SIZE - 4, 4, 4);
     }
     
     drawNextPiece() {
@@ -473,26 +520,38 @@ class TetrisGame {
                         const pixelX = offsetX + x * blockSize;
                         const pixelY = offsetY + y * blockSize;
                         
-                        // Draw main block
-                        this.nextCtx.fillStyle = this.nextPiece.color;
+                        // Create gradient for spaceship terminal effect
+                        const gradient = this.nextCtx.createLinearGradient(pixelX, pixelY, pixelX + blockSize, pixelY + blockSize);
+                        gradient.addColorStop(0, this.nextPiece.color);
+                        gradient.addColorStop(0.5, this.lightenColor(this.nextPiece.color, 20));
+                        gradient.addColorStop(1, this.darkenColor(this.nextPiece.color, 20));
+                        
+                        // Draw main block with gradient
+                        this.nextCtx.fillStyle = gradient;
                         this.nextCtx.fillRect(pixelX, pixelY, blockSize, blockSize);
                         
-                        // Add pixel art border
-                        this.nextCtx.strokeStyle = '#00ff00';
+                        // Add spaceship terminal border
+                        this.nextCtx.strokeStyle = '#00d4ff';
                         this.nextCtx.lineWidth = 1;
                         this.nextCtx.strokeRect(pixelX, pixelY, blockSize, blockSize);
                         
-                        // Add inner highlight
+                        // Add inner glow
                         this.nextCtx.strokeStyle = '#00ffff';
                         this.nextCtx.lineWidth = 0.5;
                         this.nextCtx.strokeRect(pixelX + 0.5, pixelY + 0.5, blockSize - 1, blockSize - 1);
                         
-                        // Add pixel art shading
-                        this.nextCtx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+                        // Add terminal-style highlights
+                        this.nextCtx.fillStyle = 'rgba(0, 212, 255, 0.4)';
                         this.nextCtx.fillRect(pixelX + 1, pixelY + 1, blockSize - 2, 1);
                         
-                        this.nextCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                        // Add terminal-style shadows
+                        this.nextCtx.fillStyle = 'rgba(0, 0, 0, 0.4)';
                         this.nextCtx.fillRect(pixelX + 1, pixelY + blockSize - 2, blockSize - 2, 1);
+                        
+                        // Add corner highlights for terminal effect
+                        this.nextCtx.fillStyle = 'rgba(0, 255, 255, 0.6)';
+                        this.nextCtx.fillRect(pixelX + 0.5, pixelY + 0.5, 1, 1);
+                        this.nextCtx.fillRect(pixelX + blockSize - 1.5, pixelY + 0.5, 1, 1);
                     }
                 }
             }
