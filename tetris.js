@@ -36,6 +36,8 @@ class TetrisGame {
         
         // Sound effects
         this.sounds = this.initSounds();
+        this.metronome = null;
+        this.metronomeInterval = null;
         
         // Responsive canvas sizing
         this.setupResponsiveCanvas();
@@ -261,8 +263,25 @@ class TetrisGame {
                 createTone(500, 0.2, 'square');
                 setTimeout(() => createTone(600, 0.2, 'square'), 100);
                 setTimeout(() => createTone(700, 0.2, 'square'), 200);
-            }
+            },
+            metronome: () => createTone(440, 0.05, 'sine')
         };
+    }
+    
+    startMetronome() {
+        if (this.metronomeInterval) return;
+        
+        // Start metronome at 120 BPM (500ms intervals)
+        this.metronomeInterval = setInterval(() => {
+            this.sounds.metronome();
+        }, 500);
+    }
+    
+    stopMetronome() {
+        if (this.metronomeInterval) {
+            clearInterval(this.metronomeInterval);
+            this.metronomeInterval = null;
+        }
     }
     
     // Juice Effects
@@ -304,6 +323,40 @@ class TetrisGame {
         }
     }
     
+    createSnazzyParticles(x, y, count = 15) {
+        for (let i = 0; i < count; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            
+            // Create more varied particle patterns
+            const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+            const velocity = 30 + Math.random() * 80;
+            const vx = Math.cos(angle) * velocity;
+            const vy = Math.sin(angle) * velocity;
+            
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.setProperty('--vx', vx + 'px');
+            particle.style.setProperty('--vy', vy + 'px');
+            
+            // Add random size variation
+            const size = 2 + Math.random() * 4;
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            
+            // Add random opacity
+            particle.style.opacity = 0.6 + Math.random() * 0.4;
+            
+            this.particleContainer.appendChild(particle);
+            
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 800 + Math.random() * 400);
+        }
+    }
+    
     createBombasticExplosion(x, y, intensity = 1) {
         const explosionCount = 20 + (intensity * 30);
         
@@ -321,8 +374,8 @@ class TetrisGame {
             explosion.style.setProperty('--vx', vx + 'px');
             explosion.style.setProperty('--vy', vy + 'px');
             
-            // Random colors for explosion
-            const colors = ['#ff0000', '#ff6600', '#ffaa00', '#ffff00'];
+            // Random monochrome colors for explosion
+            const colors = ['#ffffff', '#cccccc', '#999999', '#666666'];
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
             explosion.style.background = randomColor;
             explosion.style.boxShadow = `0 0 15px ${randomColor}`;
@@ -394,6 +447,7 @@ class TetrisGame {
         if (this.gameRunning) {
             this.gameRunning = false;
             clearInterval(this.gameLoop);
+            this.stopMetronome();
         }
     }
     
@@ -539,10 +593,10 @@ class TetrisGame {
         
         // Add juice for piece placement
         this.addScreenShake(0.7);
-        this.createParticles(
+        this.createSnazzyParticles(
             this.canvas.offsetLeft + this.canvas.width / 2,
             this.canvas.offsetTop + this.canvas.height / 2,
-            15
+            10
         );
         
         this.clearLines();
@@ -576,11 +630,11 @@ class TetrisGame {
                 linesCleared
             );
             
-            // Add regular particles too
-            this.createParticles(
+            // Add snazzy particles too
+            this.createSnazzyParticles(
                 this.canvas.offsetLeft + this.canvas.width / 2,
                 this.canvas.offsetTop + this.canvas.height / 2,
-                linesCleared * 15
+                linesCleared * 20
             );
             
             // Play line clear sound
@@ -784,6 +838,7 @@ class TetrisGame {
         if (!this.gameRunning) {
             this.gameRunning = true;
             this.gameLoop = setInterval(() => this.update(), 16); // ~60 FPS
+            this.startMetronome();
         }
     }
     
@@ -791,6 +846,7 @@ class TetrisGame {
         if (this.gameRunning) {
             this.gameRunning = false;
             clearInterval(this.gameLoop);
+            this.stopMetronome();
         } else {
             this.startGame();
         }
@@ -799,6 +855,7 @@ class TetrisGame {
     resetGame() {
         this.gameRunning = false;
         clearInterval(this.gameLoop);
+        this.stopMetronome();
         
         this.board = Array(this.BOARD_HEIGHT).fill().map(() => Array(this.BOARD_WIDTH).fill(0));
         this.score = 0;

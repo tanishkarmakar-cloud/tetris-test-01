@@ -10,7 +10,7 @@ html, body {
     overflow: hidden;
     font-family: 'IBM Plex Mono', monospace;
     background: #000000;
-    color: #00ff00;
+    color: #ffffff;
     user-select: none;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
@@ -50,8 +50,8 @@ body {
         0deg,
         transparent,
         transparent 2px,
-        rgba(0, 255, 0, 0.03) 2px,
-        rgba(0, 255, 0, 0.03) 4px
+        rgba(255, 255, 255, 0.03) 2px,
+        rgba(255, 255, 255, 0.03) 4px
     );
     animation: scanlines 0.1s linear infinite;
 }
@@ -174,22 +174,22 @@ body {
     position: absolute;
     width: 3px;
     height: 3px;
-    background: #00ff00;
+    background: #ffffff;
     border-radius: 50%;
     pointer-events: none;
     animation: particleFloat 1s ease-out forwards;
-    box-shadow: 0 0 8px #00ff00;
+    box-shadow: 0 0 8px #ffffff;
 }
 
 .explosion-particle {
     position: absolute;
     width: 6px;
     height: 6px;
-    background: #ff0000;
+    background: #cccccc;
     border-radius: 50%;
     pointer-events: none;
     animation: explosionFloat 1.5s ease-out forwards;
-    box-shadow: 0 0 15px #ff0000;
+    box-shadow: 0 0 15px #cccccc;
 }
 
 @keyframes particleFloat {
@@ -238,8 +238,8 @@ body {
 /* ===== 80S MINIMAL BUTTONS ===== */
 .minimal-btn {
     background: transparent;
-    border: 2px solid #00ff00;
-    color: #00ff00;
+    border: 2px solid #ffffff;
+    color: #ffffff;
     padding: 16px 32px;
     font-family: 'IBM Plex Mono', monospace;
     font-size: 16px;
@@ -252,7 +252,7 @@ body {
     overflow: hidden;
     min-width: 140px;
     transform: scale(1);
-    text-shadow: 0 0 10px #00ff00;
+    text-shadow: 0 0 10px #ffffff;
 }
 
 .minimal-btn::before {
@@ -285,7 +285,7 @@ body {
 
 .minimal-btn:hover {
     background: rgba(0, 255, 0, 0.1);
-    border-color: #00ff00;
+    border-color: #ffffff;
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 10px 20px rgba(0, 255, 0, 0.3);
 }
@@ -301,9 +301,9 @@ body {
 }
 
 .minimal-btn.primary {
-    background: #00ff00;
+    background: #ffffff;
     color: #000000;
-    border-color: #00ff00;
+    border-color: #ffffff;
     box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
     text-shadow: none;
 }
@@ -316,26 +316,26 @@ body {
 
 .minimal-btn.secondary {
     background: transparent;
-    color: #00ff00;
-    border-color: #00ff00;
+    color: #ffffff;
+    border-color: #ffffff;
 }
 
 .minimal-btn.secondary:hover {
     background: rgba(0, 255, 0, 0.1);
-    border-color: #00ff00;
+    border-color: #ffffff;
     box-shadow: 0 10px 20px rgba(0, 255, 0, 0.3);
 }
 
 .minimal-btn.danger {
     background: transparent;
-    color: #ff0000;
-    border-color: #ff0000;
-    text-shadow: 0 0 10px #ff0000;
+    color: #cccccc;
+    border-color: #cccccc;
+    text-shadow: 0 0 10px #cccccc;
 }
 
 .minimal-btn.danger:hover {
     background: rgba(255, 0, 0, 0.1);
-    border-color: #ff0000;
+    border-color: #cccccc;
     box-shadow: 0 10px 20px rgba(255, 0, 0, 0.3);
 }
 
@@ -400,7 +400,7 @@ body {
     width: 90%;
     padding: 4rem;
     background: rgba(0, 255, 0, 0.02);
-    border: 2px solid #00ff00;
+    border: 2px solid #ffffff;
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);
     position: relative;
@@ -442,20 +442,20 @@ body {
     font-family: 'IBM Plex Mono', monospace;
     font-size: clamp(3rem, 8vw, 6rem);
     font-weight: 600;
-    color: #00ff00;
+    color: #ffffff;
     letter-spacing: 0.2em;
     margin-bottom: 1rem;
-    text-shadow: 0 0 20px #00ff00;
+    text-shadow: 0 0 20px #ffffff;
 }
 
 .title-subtitle {
     font-family: 'IBM Plex Mono', monospace;
     font-size: clamp(1rem, 3vw, 1.5rem);
-    color: #00ff00;
+    color: #ffffff;
     letter-spacing: 0.3em;
     font-weight: 400;
     opacity: 0.8;
-    text-shadow: 0 0 10px #00ff00;
+    text-shadow: 0 0 10px #ffffff;
 }
 
 .menu-buttons {
@@ -481,13 +481,14 @@ body {
     transform: rotateX(15deg);
     transform-origin: center bottom;
     transform-style: preserve-3d;
+    padding: 2rem;
+    box-sizing: border-box;
 }
 
 .game-container {
     width: 100%;
-    height: 100vh;
+    height: 100%;
     max-width: 1400px;
-    padding: 2rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -499,6 +500,7 @@ body {
     gap: 2rem;
     width: 100%;
     max-width: 1200px;
+    align-items: stretch;
 }
 
 /* ===== LEFT PANE: FULL HEIGHT GAME VIEWPORT ===== */
@@ -515,7 +517,7 @@ body {
     justify-content: center;
     align-items: center;
     background: rgba(0, 255, 0, 0.02);
-    border: 2px solid #00ff00;
+    border: 2px solid #ffffff;
     border-radius: 15px;
     padding: 2rem;
     min-height: 0;
@@ -553,7 +555,7 @@ body {
     max-height: 100%;
     width: auto;
     height: auto;
-    border: 1px solid #00ff00;
+    border: 1px solid #ffffff;
     background: #000000;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
@@ -568,13 +570,15 @@ body {
     width: 300px;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
     min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.5rem;
 }
 
 .ui-section {
     background: rgba(0, 255, 0, 0.02);
-    border: 2px solid #00ff00;
+    border: 2px solid #ffffff;
     border-radius: 15px;
     padding: 2rem;
     position: relative;
@@ -600,7 +604,7 @@ body {
 }
 
 .ui-section h3 {
-    color: #00ff00;
+    color: #ffffff;
     font-size: 1.2rem;
     letter-spacing: 0.1em;
     margin-bottom: 1.5rem;
@@ -609,7 +613,7 @@ body {
     font-weight: 500;
     position: relative;
     z-index: 1;
-    text-shadow: 0 0 10px #00ff00;
+    text-shadow: 0 0 10px #ffffff;
 }
 
 .score-display {
@@ -629,19 +633,19 @@ body {
 
 .score-label {
     font-size: 12px;
-    color: #00ff00;
+    color: #ffffff;
     letter-spacing: 0.1em;
     font-family: 'IBM Plex Mono', monospace;
     opacity: 0.8;
-    text-shadow: 0 0 5px #00ff00;
+    text-shadow: 0 0 5px #ffffff;
 }
 
 .score-value {
     font-size: 24px;
-    color: #00ff00;
+    color: #ffffff;
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 500;
-    text-shadow: 0 0 10px #00ff00;
+    text-shadow: 0 0 10px #ffffff;
 }
 
 .next-piece-container {
@@ -649,7 +653,7 @@ body {
     justify-content: center;
     align-items: center;
     background: #000000;
-    border: 1px solid #00ff00;
+    border: 1px solid #ffffff;
     border-radius: 8px;
     padding: 1.5rem;
     position: relative;
@@ -681,15 +685,15 @@ body {
     gap: 1rem;
     padding: 1rem;
     background: rgba(0, 255, 0, 0.05);
-    border: 1px solid #00ff00;
+    border: 1px solid #ffffff;
     border-radius: 8px;
 }
 
 .key {
-    background: #00ff00;
+    background: #ffffff;
     color: #000000;
     padding: 8px 16px;
-    border: 1px solid #00ff00;
+    border: 1px solid #ffffff;
     font-family: 'IBM Plex Mono', monospace;
     font-size: 14px;
     font-weight: 500;
@@ -700,11 +704,11 @@ body {
 }
 
 .action {
-    color: #00ff00;
+    color: #ffffff;
     font-size: 14px;
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 400;
-    text-shadow: 0 0 5px #00ff00;
+    text-shadow: 0 0 5px #ffffff;
 }
 
 .game-controls {
@@ -737,7 +741,7 @@ body {
     width: 90%;
     padding: 4rem;
     background: rgba(255, 0, 0, 0.02);
-    border: 2px solid #ff0000;
+    border: 2px solid #cccccc;
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
     position: relative;
@@ -778,10 +782,10 @@ body {
     font-family: 'IBM Plex Mono', monospace;
     font-size: clamp(2rem, 6vw, 4rem);
     font-weight: 600;
-    color: #ff0000;
+    color: #cccccc;
     letter-spacing: 0.2em;
     margin-bottom: 2rem;
-    text-shadow: 0 0 20px #ff0000;
+    text-shadow: 0 0 20px #cccccc;
 }
 
 .final-score {
@@ -790,19 +794,19 @@ body {
 
 .final-score .score-label {
     font-size: 1.2rem;
-    color: #ff0000;
+    color: #cccccc;
     letter-spacing: 0.1em;
     font-family: 'IBM Plex Mono', monospace;
     margin-bottom: 0.5rem;
-    text-shadow: 0 0 10px #ff0000;
+    text-shadow: 0 0 10px #cccccc;
 }
 
 .final-score .score-value {
     font-size: 3rem;
-    color: #ff0000;
+    color: #cccccc;
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 500;
-    text-shadow: 0 0 20px #ff0000;
+    text-shadow: 0 0 20px #cccccc;
 }
 
 .game-over-stats {
@@ -821,19 +825,19 @@ body {
 
 .stat-label {
     font-size: 12px;
-    color: #ff0000;
+    color: #cccccc;
     letter-spacing: 0.1em;
     font-family: 'IBM Plex Mono', monospace;
     opacity: 0.8;
-    text-shadow: 0 0 5px #ff0000;
+    text-shadow: 0 0 5px #cccccc;
 }
 
 .stat-value {
     font-size: 1.5rem;
-    color: #ff0000;
+    color: #cccccc;
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 500;
-    text-shadow: 0 0 10px #ff0000;
+    text-shadow: 0 0 10px #cccccc;
 }
 
 .game-over-buttons {
@@ -857,7 +861,7 @@ body {
 
 .modal-content {
     background: #000000;
-    border: 2px solid #00ff00;
+    border: 2px solid #ffffff;
     max-width: 600px;
     width: 90%;
     max-height: 80vh;
@@ -870,28 +874,28 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 2rem;
-    border-bottom: 1px solid #00ff00;
+    border-bottom: 1px solid #ffffff;
 }
 
 .modal-header h2 {
-    color: #00ff00;
+    color: #ffffff;
     font-size: 24px;
     letter-spacing: 0.1em;
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 500;
-    text-shadow: 0 0 10px #00ff00;
+    text-shadow: 0 0 10px #ffffff;
 }
 
 .close-btn {
     background: transparent;
-    border: 2px solid #00ff00;
-    color: #00ff00;
+    border: 2px solid #ffffff;
+    color: #ffffff;
     font-size: 24px;
     cursor: pointer;
     padding: 8px 16px;
     font-family: 'IBM Plex Mono', monospace;
     transition: all 0.2s ease;
-    text-shadow: 0 0 10px #00ff00;
+    text-shadow: 0 0 10px #ffffff;
 }
 
 .close-btn:hover {
@@ -915,14 +919,14 @@ body {
     gap: 1rem;
     padding: 1.5rem;
     background: rgba(0, 255, 0, 0.05);
-    border: 1px solid #00ff00;
+    border: 1px solid #ffffff;
 }
 
 .control-key {
-    background: #00ff00;
+    background: #ffffff;
     color: #000000;
     padding: 8px 16px;
-    border: 1px solid #00ff00;
+    border: 1px solid #ffffff;
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
     font-weight: 500;
@@ -932,37 +936,37 @@ body {
 }
 
 .control-desc {
-    color: #00ff00;
+    color: #ffffff;
     font-size: 12px;
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 400;
-    text-shadow: 0 0 5px #00ff00;
+    text-shadow: 0 0 5px #ffffff;
 }
 
 .game-rules {
     margin-top: 2rem;
     padding: 2rem;
     background: rgba(0, 255, 0, 0.05);
-    border: 1px solid #00ff00;
+    border: 1px solid #ffffff;
 }
 
 .game-rules h3 {
-    color: #00ff00;
+    color: #ffffff;
     margin-bottom: 1rem;
     letter-spacing: 0.1em;
     font-size: 18px;
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 500;
-    text-shadow: 0 0 10px #00ff00;
+    text-shadow: 0 0 10px #ffffff;
 }
 
 .game-rules p {
-    color: #00ff00;
+    color: #ffffff;
     line-height: 1.8;
     font-size: 14px;
     font-family: 'IBM Plex Mono', monospace;
     opacity: 0.8;
-    text-shadow: 0 0 5px #00ff00;
+    text-shadow: 0 0 5px #ffffff;
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
