@@ -8,7 +8,7 @@
 html, body {
     height: 100%;
     overflow: hidden;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Courier New', monospace;
     background: #000000;
     color: #ffffff;
     user-select: none;
@@ -236,84 +236,59 @@ body {
     display: none !important;
 }
 
-/* ===== MINIMAL BUTTONS ===== */
-.minimal-btn {
-    background: transparent;
-    border: 1px solid #ffffff;
+/* ===== TETRIS BUTTONS ===== */
+.tetris-btn {
+    background: #000000;
+    border: 2px solid #ffffff;
     color: #ffffff;
-    padding: 4px 8px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 8px;
-    font-weight: 500;
+    padding: 8px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: bold;
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
     position: relative;
-    overflow: hidden;
-    min-width: 40px;
-    transform: scale(1);
-    text-shadow: 0 0 10px #ffffff;
+    min-width: 80px;
+    text-shadow: 0 0 5px #ffffff;
 }
 
-.minimal-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.1);
-    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.minimal-btn:hover::before {
-    left: 100%;
-}
-
-.minimal-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: #ffffff;
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 8px 16px rgba(255, 255, 255, 0.2);
-}
-
-.minimal-btn:active {
-    transform: translateY(0) scale(0.98);
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.minimal-btn.primary {
+.tetris-btn:hover {
     background: #ffffff;
     color: #000000;
-    border-color: #ffffff;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
     text-shadow: none;
+    box-shadow: 0 0 10px #ffffff;
 }
 
-.minimal-btn.primary:hover {
-    background: rgba(255, 255, 255, 0.9);
+.tetris-btn:active {
+    transform: scale(0.95);
+}
+
+.tetris-btn.danger {
+    border-color: #ff0000;
+    color: #ff0000;
+    text-shadow: 0 0 5px #ff0000;
+}
+
+.tetris-btn.danger:hover {
+    background: #ff0000;
     color: #000000;
-    box-shadow: 0 12px 24px rgba(255, 255, 255, 0.6);
+    text-shadow: none;
+    box-shadow: 0 0 10px #ff0000;
 }
 
-.minimal-btn.secondary {
-    background: transparent;
-    color: #ffffff;
-    border-color: #ffffff;
+.tetris-btn.secondary {
+    border-color: #00ff00;
+    color: #00ff00;
+    text-shadow: 0 0 5px #00ff00;
 }
 
-.minimal-btn.danger {
-    background: transparent;
-    color: #cccccc;
-    border-color: #cccccc;
-    text-shadow: 0 0 10px #cccccc;
-}
-
-.minimal-btn.danger:hover {
-    background: rgba(204, 204, 204, 0.1);
-    border-color: #cccccc;
-    box-shadow: 0 8px 16px rgba(204, 204, 204, 0.2);
+.tetris-btn.secondary:hover {
+    background: #00ff00;
+    color: #000000;
+    text-shadow: none;
+    box-shadow: 0 0 10px #00ff00;
 }
 
 /* ===== JUICE EFFECTS ===== */
@@ -331,11 +306,11 @@ body {
     100% { transform: scale(1); }
 }
 
-.game-viewport {
+.game-board {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.game-viewport.flash {
+.game-board.flash {
     animation: flash 0.3s ease-in-out;
 }
 
@@ -416,9 +391,9 @@ body {
 }
 
 .title-text {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Courier New', monospace;
     font-size: clamp(3rem, 8vw, 6rem);
-    font-weight: 600;
+    font-weight: bold;
     color: #ffffff;
     letter-spacing: 0.2em;
     margin-bottom: 1rem;
@@ -426,11 +401,11 @@ body {
 }
 
 .title-subtitle {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Courier New', monospace;
     font-size: clamp(1rem, 3vw, 1.5rem);
     color: #ffffff;
     letter-spacing: 0.3em;
-    font-weight: 400;
+    font-weight: bold;
     opacity: 0.8;
     text-shadow: 0 0 10px #ffffff;
 }
@@ -458,7 +433,7 @@ body {
     transform: rotateX(15deg);
     transform-origin: center bottom;
     transform-style: preserve-3d;
-    padding: 0.5rem;
+    padding: 1rem;
     box-sizing: border-box;
 }
 
@@ -466,151 +441,44 @@ body {
     width: 100%;
     height: 100%;
     max-width: 100%;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    gap: 0.3rem;
-    align-items: center;
-    justify-items: center;
-}
-
-/* ===== TOP UI: ULTRA-COMPACT ===== */
-.top-ui {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    max-width: 100%;
-    padding: 0.3rem 0.8rem;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid #ffffff;
-    border-radius: 6px;
-    position: relative;
-    height: 40px;
-    flex-shrink: 0;
-}
-
-.top-ui::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-        repeating-linear-gradient(
-            90deg,
-            transparent,
-            transparent 1px,
-            rgba(255, 255, 255, 0.03) 1px,
-            rgba(255, 255, 255, 0.03) 2px
-        );
-    pointer-events: none;
-    border-radius: 6px;
-}
-
-.score-section {
-    display: flex;
-    gap: 1.5rem;
-    position: relative;
-    z-index: 1;
-}
-
-.score-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.1rem;
-}
-
-.score-label {
-    font-size: 8px;
-    color: #ffffff;
-    letter-spacing: 0.1em;
-    font-family: 'IBM Plex Mono', monospace;
-    opacity: 0.8;
-    text-shadow: 0 0 5px #ffffff;
-}
-
-.score-value {
-    font-size: 14px;
-    color: #ffffff;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 500;
-    text-shadow: 0 0 10px #ffffff;
-}
-
-.next-piece-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.2rem;
-    position: relative;
-    z-index: 1;
-}
-
-.next-piece-label {
-    font-size: 8px;
-    color: #ffffff;
-    letter-spacing: 0.1em;
-    font-family: 'IBM Plex Mono', monospace;
-    text-shadow: 0 0 5px #ffffff;
-}
-
-.next-piece-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #000000;
-    border: 1px solid #ffffff;
-    border-radius: 3px;
-    padding: 0.2rem;
-    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.2);
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    min-height: 30px;
-    position: relative;
 }
 
-#nextCanvas {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
-}
-
-/* ===== CENTER: MAXIMUM GAME VIEWPORT ===== */
-.game-viewport-container {
+/* ===== CLASSIC TETRIS LAYOUT ===== */
+.tetris-layout {
     display: flex;
-    justify-content: center;
-    align-items: center;
+    gap: 2rem;
+    align-items: flex-start;
+    max-width: 1000px;
     width: 100%;
-    height: 100%;
+}
+
+/* ===== GAME BOARD SECTION ===== */
+.game-board-section {
     flex: 1;
-    min-height: 0;
-}
-
-.game-viewport {
-    position: relative;
-    background: rgba(255, 255, 255, 0.02);
-    border: 2px solid #ffffff;
-    border-radius: 8px;
-    padding: 0.5rem;
-    overflow: hidden;
-    aspect-ratio: 4/3;
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-.game-viewport::before {
+.game-board {
+    position: relative;
+    background: #000000;
+    border: 3px solid #ffffff;
+    border-radius: 8px;
+    padding: 1rem;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    min-width: 300px;
+    min-height: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-board::before {
     content: '';
     position: absolute;
     top: 0;
@@ -650,24 +518,20 @@ body {
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
-/* ===== BOTTOM UI: ULTRA-COMPACT ===== */
-.bottom-ui {
+/* ===== INFO PANEL ===== */
+.info-panel {
+    width: 250px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 100%;
-    padding: 0.3rem 0.8rem;
+    gap: 1.5rem;
     background: rgba(255, 255, 255, 0.02);
-    border: 1px solid #ffffff;
-    border-radius: 6px;
-    position: relative;
-    gap: 0.3rem;
-    flex-shrink: 0;
-    height: 50px;
+    border: 2px solid #ffffff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
 }
 
-.bottom-ui::before {
+.info-panel::before {
     content: '';
     position: absolute;
     top: 0;
@@ -683,58 +547,152 @@ body {
             rgba(255, 255, 255, 0.03) 2px
         );
     pointer-events: none;
-    border-radius: 6px;
+    border-radius: 8px;
 }
 
-.controls-section {
+/* ===== SCORE SECTION ===== */
+.score-section {
     display: flex;
-    gap: 0.3rem;
+    flex-direction: column;
+    gap: 1rem;
     position: relative;
     z-index: 1;
-    flex-wrap: wrap;
+}
+
+.score-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #ffffff;
+    border-radius: 4px;
+}
+
+.score-label {
+    font-size: 14px;
+    color: #ffffff;
+    letter-spacing: 0.1em;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    text-shadow: 0 0 5px #ffffff;
+}
+
+.score-value {
+    font-size: 24px;
+    color: #ffffff;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    text-shadow: 0 0 10px #ffffff;
+    letter-spacing: 0.1em;
+}
+
+/* ===== NEXT PIECE SECTION ===== */
+.next-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.next-label {
+    font-size: 16px;
+    color: #ffffff;
+    letter-spacing: 0.1em;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    text-shadow: 0 0 5px #ffffff;
+}
+
+.next-piece-container {
+    display: flex;
     justify-content: center;
+    align-items: center;
+    background: #000000;
+    border: 2px solid #ffffff;
+    border-radius: 4px;
+    padding: 1rem;
+    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.2);
+    width: 120px;
+    height: 120px;
+    min-width: 120px;
+    min-height: 120px;
+    position: relative;
+}
+
+#nextCanvas {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+/* ===== CONTROLS SECTION ===== */
+.controls-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    position: relative;
+    z-index: 1;
+}
+
+.controls-label {
+    font-size: 16px;
+    color: #ffffff;
+    letter-spacing: 0.1em;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    text-shadow: 0 0 5px #ffffff;
+    text-align: center;
+    margin-bottom: 0.5rem;
 }
 
 .control-item {
     display: flex;
     align-items: center;
-    gap: 0.2rem;
-    padding: 0.1rem 0.3rem;
+    justify-content: space-between;
+    padding: 0.5rem 0.8rem;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid #ffffff;
-    border-radius: 3px;
-    min-width: 50px;
-    justify-content: center;
+    border-radius: 4px;
+    min-height: 40px;
 }
 
 .key {
     background: #ffffff;
     color: #000000;
-    padding: 1px 3px;
+    padding: 4px 8px;
     border: 1px solid #ffffff;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 8px;
-    font-weight: 500;
-    min-width: 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 40px;
     text-align: center;
-    border-radius: 2px;
+    border-radius: 3px;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .action {
     color: #ffffff;
-    font-size: 8px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 400;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
     text-shadow: 0 0 5px #ffffff;
 }
 
+/* ===== GAME CONTROLS ===== */
 .game-controls {
     display: flex;
-    gap: 0.3rem;
+    flex-direction: column;
+    gap: 0.8rem;
     position: relative;
     z-index: 1;
-    justify-content: center;
 }
 
 /* ===== GAME OVER SCREEN ===== */
@@ -797,9 +755,9 @@ body {
 }
 
 .game-over-title {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Courier New', monospace;
     font-size: clamp(2rem, 6vw, 4rem);
-    font-weight: 600;
+    font-weight: bold;
     color: #cccccc;
     letter-spacing: 0.2em;
     margin-bottom: 2rem;
@@ -814,7 +772,8 @@ body {
     font-size: 1.2rem;
     color: #cccccc;
     letter-spacing: 0.1em;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
     margin-bottom: 0.5rem;
     text-shadow: 0 0 10px #cccccc;
 }
@@ -822,8 +781,8 @@ body {
 .final-score .score-value {
     font-size: 3rem;
     color: #cccccc;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 500;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
     text-shadow: 0 0 20px #cccccc;
 }
 
@@ -845,7 +804,8 @@ body {
     font-size: 12px;
     color: #cccccc;
     letter-spacing: 0.1em;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
     opacity: 0.8;
     text-shadow: 0 0 5px #cccccc;
 }
@@ -853,8 +813,8 @@ body {
 .stat-value {
     font-size: 1.5rem;
     color: #cccccc;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 500;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
     text-shadow: 0 0 10px #cccccc;
 }
 
@@ -899,8 +859,8 @@ body {
     color: #ffffff;
     font-size: 24px;
     letter-spacing: 0.1em;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 500;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
     text-shadow: 0 0 10px #ffffff;
 }
 
@@ -911,7 +871,7 @@ body {
     font-size: 24px;
     cursor: pointer;
     padding: 8px 16px;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Courier New', monospace;
     transition: all 0.2s ease;
     text-shadow: 0 0 10px #ffffff;
 }
@@ -945,9 +905,9 @@ body {
     color: #000000;
     padding: 8px 16px;
     border: 1px solid #ffffff;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Courier New', monospace;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: bold;
     min-width: 80px;
     text-align: center;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
@@ -956,8 +916,8 @@ body {
 .control-desc {
     color: #ffffff;
     font-size: 12px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 400;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
     text-shadow: 0 0 5px #ffffff;
 }
 
@@ -973,8 +933,8 @@ body {
     margin-bottom: 1rem;
     letter-spacing: 0.1em;
     font-size: 18px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 500;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
     text-shadow: 0 0 10px #ffffff;
 }
 
@@ -982,96 +942,104 @@ body {
     color: #ffffff;
     line-height: 1.8;
     font-size: 14px;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Courier New', monospace;
     opacity: 0.8;
     text-shadow: 0 0 5px #ffffff;
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 1200px) {
-    .game-container {
-        gap: 0.2rem;
-    }
-    
-    .top-ui, .bottom-ui {
-        height: 35px;
-        padding: 0.2rem 0.6rem;
-    }
-    
-    .score-section {
+    .tetris-layout {
+        flex-direction: column;
+        align-items: center;
         gap: 1rem;
     }
     
-    .score-value {
-        font-size: 12px;
+    .info-panel {
+        width: 100%;
+        max-width: 400px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-around;
     }
     
-    .next-piece-container {
-        width: 25px;
-        height: 25px;
+    .score-section {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+    
+    .score-item {
+        padding: 0.5rem;
+    }
+    
+    .score-value {
+        font-size: 18px;
     }
 }
 
 @media (max-width: 768px) {
     .game-screen {
-        padding: 0.3rem;
+        padding: 0.5rem;
     }
     
-    .game-container {
-        gap: 0.2rem;
-    }
-    
-    .top-ui, .bottom-ui {
-        height: 30px;
-        padding: 0.2rem 0.5rem;
-        flex-direction: column;
-        gap: 0.2rem;
-    }
-    
-    .score-section {
+    .tetris-layout {
         gap: 0.8rem;
     }
     
-    .score-value {
-        font-size: 10px;
+    .game-board {
+        min-width: 250px;
+        min-height: 500px;
+        padding: 0.5rem;
     }
     
-    .score-label {
-        font-size: 6px;
+    .info-panel {
+        width: 100%;
+        max-width: 100%;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+    .score-section {
+        flex-direction: row;
+        gap: 0.3rem;
+    }
+    
+    .score-item {
+        padding: 0.3rem;
+        flex: 1;
+    }
+    
+    .score-value {
+        font-size: 16px;
     }
     
     .next-piece-container {
-        width: 20px;
-        height: 20px;
-    }
-    
-    .controls-section {
-        gap: 0.2rem;
+        width: 80px;
+        height: 80px;
+        min-width: 80px;
+        min-height: 80px;
     }
     
     .control-item {
-        min-width: 40px;
-        padding: 0.1rem 0.2rem;
+        padding: 0.3rem 0.5rem;
+        min-height: 30px;
     }
     
     .key {
-        font-size: 6px;
-        min-width: 15px;
-        padding: 1px 2px;
-    }
-    
-    .action {
-        font-size: 6px;
-    }
-    
-    .minimal-btn {
-        font-size: 6px;
+        font-size: 10px;
         padding: 2px 4px;
         min-width: 30px;
     }
     
-    .game-viewport {
-        padding: 0.3rem;
+    .action {
+        font-size: 10px;
+    }
+    
+    .tetris-btn {
+        font-size: 10px;
+        padding: 6px 12px;
+        min-width: 60px;
     }
 }
 
@@ -1084,57 +1052,58 @@ body {
         font-size: clamp(1.5rem, 5vw, 3rem);
     }
     
-    .game-container {
-        gap: 0.1rem;
+    .game-board {
+        min-width: 200px;
+        min-height: 400px;
+        padding: 0.3rem;
     }
     
-    .top-ui, .bottom-ui {
-        height: 25px;
-        padding: 0.1rem 0.4rem;
+    .info-panel {
+        padding: 0.8rem;
     }
     
     .score-section {
-        gap: 0.5rem;
+        flex-direction: column;
+        gap: 0.3rem;
     }
     
     .score-value {
-        font-size: 8px;
-    }
-    
-    .score-label {
-        font-size: 5px;
+        font-size: 14px;
     }
     
     .next-piece-container {
-        width: 15px;
-        height: 15px;
+        width: 60px;
+        height: 60px;
+        min-width: 60px;
+        min-height: 60px;
     }
     
     .control-item {
-        min-width: 30px;
-        padding: 0.1rem;
+        padding: 0.2rem 0.3rem;
+        min-height: 25px;
     }
     
     .key {
-        font-size: 5px;
-        min-width: 12px;
+        font-size: 8px;
+        padding: 1px 3px;
+        min-width: 25px;
     }
     
     .action {
-        font-size: 5px;
+        font-size: 8px;
     }
     
-    .minimal-btn {
-        font-size: 5px;
-        padding: 1px 3px;
-        min-width: 25px;
+    .tetris-btn {
+        font-size: 8px;
+        padding: 4px 8px;
+        min-width: 50px;
     }
 }
 
 /* ===== ACCESSIBILITY ===== */
 @media (prefers-contrast: high) {
-    .minimal-btn {
-        border-width: 2px;
+    .tetris-btn {
+        border-width: 3px;
     }
     
     .control-key, .key {
@@ -1147,11 +1116,11 @@ body {
         animation: none;
     }
     
-    .minimal-btn {
+    .tetris-btn {
         transition: none;
     }
     
-    .minimal-btn:hover {
+    .tetris-btn:hover {
         transform: none;
     }
 }

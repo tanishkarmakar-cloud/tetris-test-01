@@ -135,11 +135,11 @@ class TetrisGame {
      * Resize canvas to maintain 4:3 aspect ratio
      */
     resizeCanvas() {
-        const gameViewport = document.querySelector('.game-viewport');
-        if (!gameViewport) return;
+        const gameBoard = document.querySelector('.game-board');
+        if (!gameBoard) return;
         
-        const containerWidth = gameViewport.clientWidth - 10; // Minimal padding
-        const containerHeight = gameViewport.clientHeight - 10; // Minimal padding
+        const containerWidth = gameBoard.clientWidth - 20; // Account for padding
+        const containerHeight = gameBoard.clientHeight - 20; // Account for padding
         
         // Calculate optimal canvas size for 4:3 aspect ratio
         const targetAspectRatio = 4 / 3;
@@ -201,10 +201,10 @@ class TetrisGame {
         if (nextContainer) {
             const containerWidth = nextContainer.clientWidth;
             const containerHeight = nextContainer.clientHeight;
-            const nextSize = Math.min(containerWidth - 4, containerHeight - 4, 30);
+            const nextSize = Math.min(containerWidth - 8, containerHeight - 8, 100);
             
             // Ensure minimum size
-            const finalSize = Math.max(nextSize, 20);
+            const finalSize = Math.max(nextSize, 40);
             
             this.nextCanvas.width = finalSize;
             this.nextCanvas.height = finalSize;
@@ -791,12 +791,12 @@ class TetrisGame {
         if (!this.nextCtx || !this.nextCanvas) return;
         
         this.nextCtx.imageSmoothingEnabled = false;
-        this.nextCtx.fillStyle = '#000';
+        this.nextCtx.fillStyle = '#000000';
         this.nextCtx.fillRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
         
         if (this.nextPiece) {
             const canvasSize = Math.min(this.nextCanvas.width, this.nextCanvas.height);
-            const blockSize = Math.max(canvasSize / 4, 2); // Ensure minimum block size
+            const blockSize = Math.max(canvasSize / 4, 8); // Larger minimum block size
             const offsetX = (this.nextCanvas.width - this.nextPiece.shape[0].length * blockSize) / 2;
             const offsetY = (this.nextCanvas.height - this.nextPiece.shape.length * blockSize) / 2;
             
@@ -805,8 +805,8 @@ class TetrisGame {
                     if (this.nextPiece.shape[y][x]) {
                         const pixelX = Math.floor(offsetX + x * blockSize);
                         const pixelY = Math.floor(offsetY + y * blockSize);
-                        const blockWidth = Math.max(blockSize - 1, 1);
-                        const blockHeight = Math.max(blockSize - 1, 1);
+                        const blockWidth = Math.max(blockSize - 2, 2);
+                        const blockHeight = Math.max(blockSize - 2, 2);
                         
                         const monochromeColor = this.convertToMonochrome(this.nextPiece.color);
                         
@@ -816,16 +816,16 @@ class TetrisGame {
                         
                         // Draw border
                         this.nextCtx.strokeStyle = '#ffffff';
-                        this.nextCtx.lineWidth = 0.5;
+                        this.nextCtx.lineWidth = 1;
                         this.nextCtx.strokeRect(pixelX, pixelY, blockWidth, blockHeight);
                         
                         // Draw highlight
-                        this.nextCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                        this.nextCtx.fillRect(pixelX + 0.5, pixelY + 0.5, blockWidth - 1, 0.5);
+                        this.nextCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                        this.nextCtx.fillRect(pixelX + 1, pixelY + 1, blockWidth - 2, 1);
                         
                         // Draw shadow
-                        this.nextCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                        this.nextCtx.fillRect(pixelX + 0.5, pixelY + blockHeight - 0.5, blockWidth - 1, 0.5);
+                        this.nextCtx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                        this.nextCtx.fillRect(pixelX + 1, pixelY + blockHeight - 1, blockWidth - 2, 1);
                     }
                 }
             }

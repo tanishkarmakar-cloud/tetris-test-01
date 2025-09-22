@@ -72,66 +72,73 @@
     <!-- Game Screen -->
     <div id="gameScreen" class="game-screen hidden">
         <div class="game-container" id="gameContainer">
-            <!-- Top UI: Scores and Next Piece -->
-            <div class="top-ui">
-                <div class="score-section">
-                    <div class="score-item">
-                        <span class="score-label">SCORE</span>
-                        <span id="score" class="score-value">0000000</span>
-                    </div>
-                    <div class="score-item">
-                        <span class="score-label">LEVEL</span>
-                        <span id="level" class="score-value">01</span>
-                    </div>
-                    <div class="score-item">
-                        <span class="score-label">LINES</span>
-                        <span id="lines" class="score-value">000</span>
+            <!-- Classic Tetris Layout -->
+            <div class="tetris-layout">
+                <!-- Left Side: Game Board -->
+                <div class="game-board-section">
+                    <div class="game-board">
+                        <canvas id="gameCanvas"></canvas>
+                        <div id="particleContainer" class="particle-container"></div>
+                        <div id="explosionContainer" class="explosion-container"></div>
                     </div>
                 </div>
-                <div class="next-piece-section">
-                    <div class="next-piece-label">NEXT</div>
-                    <div class="next-piece-container">
-                        <canvas id="nextCanvas"></canvas>
+                
+                <!-- Right Side: Info Panel -->
+                <div class="info-panel">
+                    <!-- Score Section -->
+                    <div class="score-section">
+                        <div class="score-item">
+                            <div class="score-label">SCORE</div>
+                            <div id="score" class="score-value">0000000</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">LEVEL</div>
+                            <div id="level" class="score-value">01</div>
+                        </div>
+                        <div class="score-item">
+                            <div class="score-label">LINES</div>
+                            <div id="lines" class="score-value">000</div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Center: 4:3 Game Viewport -->
-            <div class="game-viewport-container">
-                <div class="game-viewport">
-                    <canvas id="gameCanvas"></canvas>
-                    <div id="particleContainer" class="particle-container"></div>
-                    <div id="explosionContainer" class="explosion-container"></div>
-                </div>
-            </div>
-            
-            <!-- Bottom UI: Controls -->
-            <div class="bottom-ui">
-                <div class="controls-section">
-                    <div class="control-item">
-                        <span class="key">← →</span>
-                        <span class="action">MOVE</span>
+                    
+                    <!-- Next Piece Section -->
+                    <div class="next-section">
+                        <div class="next-label">NEXT</div>
+                        <div class="next-piece-container">
+                            <canvas id="nextCanvas"></canvas>
+                        </div>
                     </div>
-                    <div class="control-item">
-                        <span class="key">↓</span>
-                        <span class="action">SOFT DROP</span>
+                    
+                    <!-- Controls Section -->
+                    <div class="controls-section">
+                        <div class="controls-label">CONTROLS</div>
+                        <div class="control-item">
+                            <span class="key">← →</span>
+                            <span class="action">MOVE</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">↓</span>
+                            <span class="action">SOFT DROP</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">↑</span>
+                            <span class="action">ROTATE</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">SPACE</span>
+                            <span class="action">HARD DROP</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">P</span>
+                            <span class="action">PAUSE</span>
+                        </div>
                     </div>
-                    <div class="control-item">
-                        <span class="key">↑</span>
-                        <span class="action">ROTATE</span>
+                    
+                    <!-- Game Controls -->
+                    <div class="game-controls">
+                        <button id="resetBtn" class="tetris-btn danger">RESET</button>
+                        <button id="backToMenu" class="tetris-btn secondary">MENU</button>
                     </div>
-                    <div class="control-item">
-                        <span class="key">SPACE</span>
-                        <span class="action">HARD DROP</span>
-                    </div>
-                    <div class="control-item">
-                        <span class="key">P</span>
-                        <span class="action">PAUSE</span>
-                    </div>
-                </div>
-                <div class="game-controls">
-                    <button id="resetBtn" class="minimal-btn danger">RESET</button>
-                    <button id="backToMenu" class="minimal-btn secondary">← MENU</button>
                 </div>
             </div>
         </div>
