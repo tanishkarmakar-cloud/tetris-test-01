@@ -1,6 +1,6 @@
 /**
  * Tetris Game - Professional Implementation
- * Features: 4:3 aspect ratio, ghost piece, rhythmic music, monochrome aesthetic
+ * Features: Proper three-panel layout, hold piece, ghost piece, 80s minimalism
  */
 
 class TetrisGame {
@@ -8,28 +8,33 @@ class TetrisGame {
         // Canvas and rendering
         this.canvas = document.getElementById('gameCanvas');
         this.nextCanvas = document.getElementById('nextCanvas');
+        this.holdCanvas = document.getElementById('holdCanvas');
         
-        if (!this.canvas || !this.nextCanvas) {
+        if (!this.canvas || !this.nextCanvas || !this.holdCanvas) {
             console.error('Canvas elements not found!');
             return;
         }
         
         this.ctx = this.canvas.getContext('2d');
         this.nextCtx = this.nextCanvas.getContext('2d');
+        this.holdCtx = this.holdCanvas.getContext('2d');
         
         // Set canvas properties
         this.ctx.imageSmoothingEnabled = false;
         this.nextCtx.imageSmoothingEnabled = false;
+        this.holdCtx.imageSmoothingEnabled = false;
         
         // Game constants
         this.BOARD_WIDTH = 10;
         this.BOARD_HEIGHT = 20;
-        this.BLOCK_SIZE = 30;
+        this.BLOCK_SIZE = 20;
         
         // Game state
         this.board = Array(this.BOARD_HEIGHT).fill().map(() => Array(this.BOARD_WIDTH).fill(0));
         this.currentPiece = null;
         this.nextPiece = null;
+        this.holdPiece = null;
+        this.canHold = true;
         this.score = 0;
         this.level = 1;
         this.lines = 0;
@@ -41,7 +46,6 @@ class TetrisGame {
         // UI elements
         this.mainMenu = document.getElementById('mainMenu');
         this.gameScreen = document.getElementById('gameScreen');
-        this.instructionsModal = document.getElementById('instructionsModal');
         this.gameOverScreen = document.getElementById('gameOverScreen');
         this.gameContainer = document.getElementById('gameContainer');
         this.particleContainer = document.getElementById('particleContainer');
@@ -52,12 +56,7 @@ class TetrisGame {
         this.metronomeInterval = null;
         this.beatCount = 0;
         
-        // Performance optimization
-        this.lastFrameTime = 0;
-        this.targetFPS = 60;
-        this.frameInterval = 1000 / this.targetFPS;
-        
-        // Tetris pieces (Tetrominoes) - using standard Tetris piece definitions
+        // Tetris pieces (Tetrominoes)
         this.pieces = [
             {
                 shape: [
@@ -65,14 +64,14 @@ class TetrisGame {
                     [1, 1, 1],
                     [0, 0, 0]
                 ],
-                color: '#ffffff' // T piece - white
+                color: '#ffffff' // T piece
             },
             {
                 shape: [
                     [1, 1],
                     [1, 1]
                 ],
-                color: '#ffffff' // O piece - white
+                color: '#ffffff' // O piece
             },
             {
                 shape: [
@@ -80,7 +79,7 @@ class TetrisGame {
                     [1, 1, 0],
                     [0, 0, 0]
                 ],
-                color: '#ffffff' // S piece - white
+                color: '#ffffff' // S piece
             },
             {
                 shape: [
@@ -88,7 +87,7 @@ class TetrisGame {
                     [0, 1, 1],
                     [0, 0, 0]
                 ],
-                color: '#ffffff' // Z piece - white
+                color: '#ffffff' // Z piece
             },
             {
                 shape: [
@@ -96,7 +95,7 @@ class TetrisGame {
                     [1, 1, 1],
                     [0, 0, 0]
                 ],
-                color: '#ffffff' // J piece - white
+                color: '#ffffff' // J piece
             },
             {
                 shape: [
@@ -104,13 +103,13 @@ class TetrisGame {
                     [1, 1, 1],
                     [0, 0, 0]
                 ],
-                color: '#ffffff' // L piece - white
+                color: '#ffffff' // L piece
             },
             {
                 shape: [
                     [1, 1, 1, 1]
                 ],
-                color: '#ffffff' // I piece - white
+                color: '#ffffff' // I piece
             }
         ];
         
@@ -123,18 +122,7 @@ class TetrisGame {
     init() {
         this.setupEventListeners();
         this.setupResponsiveCanvas();
-        
-        // Only initialize game pieces if we're on the game screen
-        if (this.gameScreen && !this.gameScreen.classList.contains('hidden')) {
-            this.generateNextPiece();
-            this.spawnPiece();
-            this.updateDisplay();
-            this.draw();
-        }
-        
-        // Debug: Log next piece info
-        console.log('Game initialized');
-        console.log('Canvas size:', this.canvas.width, 'x', this.canvas.height);
+        this.updateDisplay();
     }
     
     /**
@@ -146,76 +134,41 @@ class TetrisGame {
     }
     
     /**
-     * Resize canvas to maintain 4:3 aspect ratio
+     * Resize canvas to fit container
      */
     resizeCanvas() {
         const gameBoard = document.querySelector('.game-board');
-        if (!gameBoard) {
-            // Fallback to canvas parent if game board not found
-            const canvasParent = this.canvas.parentElement;
-            if (!canvasParent) return;
-            
-            const containerWidth = canvasParent.clientWidth - 30;
-            const containerHeight = canvasParent.clientHeight - 30;
-            this.resizeCanvasWithDimensions(containerWidth, containerHeight);
-            return;
-        }
+        if (!gameBoard) return;
         
-        const containerWidth = gameBoard.clientWidth - 30; // Account for padding
-        const containerHeight = gameBoard.clientHeight - 30; // Account for padding
-        this.resizeCanvasWithDimensions(containerWidth, containerHeight);
-    }
-    
-    resizeCanvasWithDimensions(containerWidth, containerHeight) {
-        // Calculate optimal canvas size for 4:3 aspect ratio
-        const targetAspectRatio = 4 / 3;
-        const containerAspectRatio = containerWidth / containerHeight;
+        const containerWidth = gameBoard.clientWidth - 30;
+        const containerHeight = gameBoard.clientHeight - 30;
         
-        let canvasWidth, canvasHeight;
+        // Calculate block size based on container
+        const maxBlockSize = Math.min(
+            Math.floor(containerWidth / this.BOARD_WIDTH),
+            Math.floor(containerHeight / this.BOARD_HEIGHT)
+        );
         
-        if (containerAspectRatio > targetAspectRatio) {
-            canvasHeight = containerHeight;
-            canvasWidth = canvasHeight * targetAspectRatio;
-        } else {
-            canvasWidth = containerWidth;
-            canvasHeight = canvasWidth / targetAspectRatio;
-        }
+        this.BLOCK_SIZE = Math.max(maxBlockSize, 10);
         
-        // Ensure canvas dimensions are integers
-        canvasWidth = Math.floor(canvasWidth);
-        canvasHeight = Math.floor(canvasHeight);
-
-        // Calculate block size first
-        this.BLOCK_SIZE = Math.floor(canvasWidth / this.BOARD_WIDTH);
+        // Set canvas dimensions
+        const canvasWidth = this.BLOCK_SIZE * this.BOARD_WIDTH;
+        const canvasHeight = this.BLOCK_SIZE * this.BOARD_HEIGHT;
         
-        // Recalculate canvas size based on actual block size to ensure perfect fit
-        const actualCanvasWidth = this.BLOCK_SIZE * this.BOARD_WIDTH;
-        const actualCanvasHeight = this.BLOCK_SIZE * this.BOARD_HEIGHT;
+        this.canvas.width = canvasWidth;
+        this.canvas.height = canvasHeight;
+        this.canvas.style.width = canvasWidth + 'px';
+        this.canvas.style.height = canvasHeight + 'px';
         
-        // Ensure the canvas fits within the container
-        if (actualCanvasWidth > containerWidth) {
-            this.BLOCK_SIZE = Math.floor(containerWidth / this.BOARD_WIDTH);
-        }
-        if (actualCanvasHeight > containerHeight) {
-            this.BLOCK_SIZE = Math.floor(containerHeight / this.BOARD_HEIGHT);
-        }
-        
-        // Final canvas dimensions
-        const finalCanvasWidth = this.BLOCK_SIZE * this.BOARD_WIDTH;
-        const finalCanvasHeight = this.BLOCK_SIZE * this.BOARD_HEIGHT;
-        
-        this.canvas.width = finalCanvasWidth;
-        this.canvas.height = finalCanvasHeight;
-        this.canvas.style.width = finalCanvasWidth + 'px';
-        this.canvas.style.height = finalCanvasHeight + 'px';
-        
-        // Resize next piece canvas
+        // Resize other canvases
         this.resizeNextCanvas();
+        this.resizeHoldCanvas();
         
-        // Redraw if game is initialized
-        if (this.currentPiece !== null) {
+        // Redraw if game is running
+        if (this.gameRunning) {
             this.draw();
             this.drawNextPiece();
+            this.drawHoldPiece();
         }
     }
     
@@ -223,22 +176,27 @@ class TetrisGame {
      * Resize next piece canvas
      */
     resizeNextCanvas() {
-        const nextContainer = document.querySelector('.next-piece-container');
-        if (nextContainer) {
-            const containerWidth = nextContainer.clientWidth;
-            const containerHeight = nextContainer.clientHeight;
-            const nextSize = Math.min(containerWidth - 8, containerHeight - 8, 100);
-            
-            // Ensure minimum size
-            const finalSize = Math.max(nextSize, 40);
-            
-            this.nextCanvas.width = finalSize;
-            this.nextCanvas.height = finalSize;
-            this.nextCanvas.style.width = finalSize + 'px';
-            this.nextCanvas.style.height = finalSize + 'px';
-            
-            // Force redraw
-            this.drawNextPiece();
+        const nextBox = document.querySelector('.next-box');
+        if (nextBox) {
+            const size = Math.min(nextBox.clientWidth - 20, nextBox.clientHeight - 20, 80);
+            this.nextCanvas.width = size;
+            this.nextCanvas.height = size;
+            this.nextCanvas.style.width = size + 'px';
+            this.nextCanvas.style.height = size + 'px';
+        }
+    }
+    
+    /**
+     * Resize hold piece canvas
+     */
+    resizeHoldCanvas() {
+        const holdBox = document.querySelector('.hold-box');
+        if (holdBox) {
+            const size = Math.min(holdBox.clientWidth - 20, holdBox.clientHeight - 20, 80);
+            this.holdCanvas.width = size;
+            this.holdCanvas.height = size;
+            this.holdCanvas.style.width = size + 'px';
+            this.holdCanvas.style.height = size + 'px';
         }
     }
     
@@ -252,7 +210,6 @@ class TetrisGame {
             this.showGameScreen();
         });
         
-        document.getElementById('closeInstructions').addEventListener('click', () => this.hideInstructions());
         document.getElementById('backToMenu').addEventListener('click', () => {
             this.sounds.button();
             this.showMainMenu();
@@ -272,7 +229,7 @@ class TetrisGame {
         
         // Keyboard events
         document.addEventListener('keydown', (e) => {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyC'].includes(e.code)) {
                 e.preventDefault();
             }
             this.handleKeyPress(e);
@@ -285,13 +242,6 @@ class TetrisGame {
         document.addEventListener('click', (e) => {
             if (this.gameScreen && !this.gameScreen.classList.contains('hidden')) {
                 this.canvas.focus();
-            }
-        });
-        
-        // Modal events
-        this.instructionsModal.addEventListener('click', (e) => {
-            if (e.target === this.instructionsModal) {
-                this.hideInstructions();
             }
         });
     }
@@ -329,11 +279,6 @@ class TetrisGame {
                 setTimeout(() => createTone(600, 0.1, 'square'), 100);
                 setTimeout(() => createTone(700, 0.2, 'square'), 150);
             },
-            explosion: () => {
-                createTone(100, 0.3, 'sawtooth');
-                setTimeout(() => createTone(80, 0.3, 'sawtooth'), 100);
-                setTimeout(() => createTone(60, 0.3, 'sawtooth'), 200);
-            },
             gameOver: () => {
                 createTone(200, 0.5, 'sawtooth');
                 setTimeout(() => createTone(150, 0.5, 'sawtooth'), 200);
@@ -344,52 +289,8 @@ class TetrisGame {
                 createTone(500, 0.2, 'square');
                 setTimeout(() => createTone(600, 0.2, 'square'), 100);
                 setTimeout(() => createTone(700, 0.2, 'square'), 200);
-            },
-            metronome: () => createTone(440, 0.05, 'sine'),
-            // Rhythmic music tones
-            kick: () => createTone(60, 0.2, 'sawtooth'),
-            snare: () => createTone(200, 0.1, 'square'),
-            hihat: () => createTone(800, 0.05, 'square'),
-            bass: () => createTone(80, 0.3, 'sawtooth'),
-            lead: () => createTone(440, 0.2, 'sine')
+            }
         };
-    }
-    
-    /**
-     * Start rhythmic metronome
-     */
-    startMetronome() {
-        if (this.metronomeInterval) return;
-        
-        this.metronomeInterval = setInterval(() => {
-            this.beatCount++;
-            
-            // Create rhythmic pattern
-            if (this.beatCount % 4 === 1) {
-                this.sounds.kick();
-                this.sounds.metronome();
-            } else if (this.beatCount % 4 === 3) {
-                this.sounds.snare();
-                this.sounds.metronome();
-            } else {
-                this.sounds.metronome();
-            }
-            
-            // Add hihat on off-beats
-            if (this.beatCount % 2 === 0) {
-                setTimeout(() => this.sounds.hihat(), 250);
-            }
-        }, 500);
-    }
-    
-    /**
-     * Stop metronome
-     */
-    stopMetronome() {
-        if (this.metronomeInterval) {
-            clearInterval(this.metronomeInterval);
-            this.metronomeInterval = null;
-        }
     }
     
     /**
@@ -406,22 +307,25 @@ class TetrisGame {
         
         switch(e.code) {
             case 'ArrowLeft':
-                this.sounds.hihat();
+                this.sounds.move();
                 this.movePiece(-1, 0);
                 break;
             case 'ArrowRight':
-                this.sounds.hihat();
+                this.sounds.move();
                 this.movePiece(1, 0);
                 break;
             case 'ArrowDown':
-                this.sounds.bass();
+                this.sounds.drop();
                 this.movePiece(0, 1);
                 break;
             case 'ArrowUp':
-                this.sounds.lead();
+                this.sounds.rotate();
                 this.rotatePiece();
                 break;
-            // Hard drop removed
+            case 'KeyC':
+                this.sounds.button();
+                this.holdCurrentPiece();
+                break;
         }
     }
     
@@ -435,7 +339,6 @@ class TetrisGame {
             x: Math.floor((this.BOARD_WIDTH - this.pieces[randomIndex].shape[0].length) / 2),
             y: 0
         };
-        // Draw the next piece immediately
         this.drawNextPiece();
     }
     
@@ -445,11 +348,12 @@ class TetrisGame {
     spawnPiece() {
         this.currentPiece = this.nextPiece;
         this.generateNextPiece();
+        this.canHold = true;
         
         if (this.checkCollision(this.currentPiece, 0, 0)) {
             this.gameOver();
         }
-        this.drawNextPiece();
+        this.draw();
     }
     
     /**
@@ -485,21 +389,12 @@ class TetrisGame {
             this.currentPiece.y += dy;
             this.draw();
             
-            // Enhanced juice for movement
+            // Add juice for movement
             if (dx !== 0) {
                 this.addScreenShake(0.5);
-                this.gameBoard.classList.add('pulse');
-                setTimeout(() => this.gameBoard.classList.remove('pulse'), 200);
             }
         } else if (dy > 0) {
-            // Add visual feedback for failed downward movement
-            this.gameContainer.classList.add('shake');
-            setTimeout(() => this.gameContainer.classList.remove('shake'), 300);
             this.placePiece();
-        } else {
-            // Add visual feedback for failed horizontal movement
-            this.gameContainer.classList.add('shake');
-            setTimeout(() => this.gameContainer.classList.remove('shake'), 200);
         }
     }
     
@@ -514,15 +409,9 @@ class TetrisGame {
         
         if (this.checkCollision(this.currentPiece, 0, 0)) {
             this.currentPiece.shape = originalShape;
-            // Add visual feedback for failed rotation
-            this.gameContainer.classList.add('shake');
-            setTimeout(() => this.gameContainer.classList.remove('shake'), 200);
         } else {
             this.draw();
             this.addScreenShake(0.3);
-            // Add enhanced visual feedback for successful rotation
-            this.gameBoard.classList.add('pulse');
-            setTimeout(() => this.gameBoard.classList.remove('pulse'), 300);
         }
     }
     
@@ -539,20 +428,35 @@ class TetrisGame {
                 rotated[x][rows - 1 - y] = matrix[y][x];
             }
         }
-        
         return rotated;
     }
     
     /**
-     * Hard drop piece
+     * Hold current piece
      */
-    hardDrop() {
-        while (!this.checkCollision(this.currentPiece, 0, 1)) {
-            this.currentPiece.y++;
+    holdCurrentPiece() {
+        if (!this.canHold) return;
+        
+        if (this.holdPiece === null) {
+            this.holdPiece = {
+                ...this.currentPiece,
+                x: Math.floor((this.BOARD_WIDTH - this.currentPiece.shape[0].length) / 2),
+                y: 0
+            };
+            this.spawnPiece();
+        } else {
+            const temp = this.holdPiece;
+            this.holdPiece = {
+                ...this.currentPiece,
+                x: Math.floor((this.BOARD_WIDTH - this.currentPiece.shape[0].length) / 2),
+                y: 0
+            };
+            this.currentPiece = temp;
         }
-        this.placePiece();
-        this.addScreenShake(1);
-        this.flashScreen();
+        
+        this.canHold = false;
+        this.draw();
+        this.drawHoldPiece();
     }
     
     /**
@@ -571,16 +475,11 @@ class TetrisGame {
             }
         }
         
-        // Enhanced visual feedback for piece placement
         this.addScreenShake(0.7);
-        this.gameBoard.classList.add('flash');
-        setTimeout(() => this.gameBoard.classList.remove('flash'), 400);
-        
-        // Enhanced particle effects
-        this.createSnazzyParticles(
+        this.createParticles(
             this.canvas.offsetLeft + this.canvas.width / 2,
             this.canvas.offsetTop + this.canvas.height / 2,
-            15
+            10
         );
         
         this.clearLines();
@@ -598,7 +497,6 @@ class TetrisGame {
                 this.board.splice(y, 1);
                 this.board.unshift(Array(this.BOARD_WIDTH).fill(0));
                 linesCleared++;
-                y++; // Check the same line again
             }
         }
         
@@ -608,29 +506,17 @@ class TetrisGame {
             this.level = Math.floor(this.lines / 10) + 1;
             this.dropInterval = Math.max(50, 1000 - (this.level - 1) * 50);
             
-            // Add bombastic explosion effects
             this.addScreenShake(linesCleared > 2 ? 3 : 2);
             this.flashScreen();
-            this.createBombasticExplosion(
+            this.createExplosion(
                 this.canvas.offsetLeft + this.canvas.width / 2,
                 this.canvas.offsetTop + this.canvas.height / 2,
                 linesCleared
             );
             
-            this.createSnazzyParticles(
-                this.canvas.offsetLeft + this.canvas.width / 2,
-                this.canvas.offsetTop + this.canvas.height / 2,
-                linesCleared * 20
-            );
-            
             this.sounds.lineClear();
             
-            // Animate score elements
-            this.animateScore(document.getElementById('score'));
-            this.animateScore(document.getElementById('lines'));
             if (this.level > Math.floor((this.lines - linesCleared) / 10) + 1) {
-                this.animateScore(document.getElementById('level'));
-                this.pulseElement(document.querySelector('.game-viewport'));
                 this.sounds.levelUp();
             }
             
@@ -642,25 +528,9 @@ class TetrisGame {
      * Update display elements
      */
     updateDisplay() {
-        const scoreElement = document.getElementById('score');
-        const levelElement = document.getElementById('level');
-        const linesElement = document.getElementById('lines');
-        
-        scoreElement.textContent = this.score.toString().padStart(7, '0');
-        levelElement.textContent = this.level.toString().padStart(2, '0');
-        linesElement.textContent = this.lines.toString().padStart(3, '0');
-        
-        // Add visual emphasis to score changes
-        scoreElement.classList.add('animate');
-        setTimeout(() => scoreElement.classList.remove('animate'), 600);
-        
-        // Add glow effect to level changes
-        if (this.level > 1) {
-            levelElement.style.textShadow = '0 0 20px #00ff00, 0 0 40px #00ff00';
-            setTimeout(() => {
-                levelElement.style.textShadow = '0 0 10px #ffffff, 0 0 20px #ffffff';
-            }, 1000);
-        }
+        document.getElementById('score').textContent = this.score.toString().padStart(6, '0');
+        document.getElementById('level').textContent = this.level.toString().padStart(2, '0');
+        document.getElementById('lines').textContent = this.lines.toString().padStart(3, '0');
     }
     
     /**
@@ -714,13 +584,6 @@ class TetrisGame {
         
         // Draw grid
         this.drawGrid();
-        
-        // Debug: Draw a test block to verify rendering
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(0, 0, this.BLOCK_SIZE, this.BLOCK_SIZE);
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 1;
-        this.ctx.strokeRect(0, 0, this.BLOCK_SIZE, this.BLOCK_SIZE);
     }
     
     /**
@@ -731,10 +594,9 @@ class TetrisGame {
         const pixelY = y * this.BLOCK_SIZE;
         
         this.ctx.imageSmoothingEnabled = false;
-        const monochromeColor = this.convertToMonochrome(color);
         
         // Draw main block
-        this.ctx.fillStyle = monochromeColor;
+        this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(pixelX, pixelY, this.BLOCK_SIZE, this.BLOCK_SIZE);
         
         // Add border
@@ -779,50 +641,10 @@ class TetrisGame {
         if (!this.currentPiece) return 0;
         
         let ghostY = this.currentPiece.y;
-        while (this.isValidMove(0, 1, this.currentPiece.shape, ghostY + 1)) {
+        while (!this.checkCollision(this.currentPiece, 0, ghostY - this.currentPiece.y + 1)) {
             ghostY++;
         }
         return ghostY;
-    }
-    
-    /**
-     * Check if move is valid
-     */
-    isValidMove(offsetX, offsetY, shape, testY = null) {
-        const testX = this.currentPiece.x + offsetX;
-        const testYPos = testY !== null ? testY : this.currentPiece.y + offsetY;
-        
-        for (let y = 0; y < shape.length; y++) {
-            for (let x = 0; x < shape[y].length; x++) {
-                if (shape[y][x]) {
-                    const boardX = testX + x;
-                    const boardY = testYPos + y;
-                    
-                    if (boardX < 0 || boardX >= this.BOARD_WIDTH ||
-                        boardY < 0 || boardY >= this.BOARD_HEIGHT ||
-                        (boardY >= 0 && this.board[boardY][boardX] !== 0)) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-    
-    /**
-     * Convert color to monochrome
-     */
-    convertToMonochrome(color) {
-        const hex = color.replace('#', '');
-        const r = parseInt(hex.substr(0, 2), 16);
-        const g = parseInt(hex.substr(2, 2), 16);
-        const b = parseInt(hex.substr(4, 2), 16);
-        
-        const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
-        const gray = Math.round(brightness);
-        const grayHex = gray.toString(16).padStart(2, '0');
-        
-        return `#${grayHex}${grayHex}${grayHex}`;
     }
     
     /**
@@ -848,70 +670,111 @@ class TetrisGame {
             this.ctx.lineTo(this.BOARD_WIDTH * this.BLOCK_SIZE, y * this.BLOCK_SIZE);
             this.ctx.stroke();
         }
-        
-        // Border
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 2;
-        this.ctx.strokeRect(0, 0, this.BOARD_WIDTH * this.BLOCK_SIZE, this.BOARD_HEIGHT * this.BLOCK_SIZE);
     }
     
     /**
      * Draw next piece
      */
     drawNextPiece() {
-        if (!this.nextCtx || !this.nextCanvas) return;
+        if (!this.nextCtx || !this.nextCanvas || !this.nextPiece) return;
         
         this.nextCtx.imageSmoothingEnabled = false;
         this.nextCtx.fillStyle = '#000000';
         this.nextCtx.fillRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
         
-        if (this.nextPiece) {
-            const canvasSize = Math.min(this.nextCanvas.width, this.nextCanvas.height);
-            const blockSize = Math.max(canvasSize / 4, 8); // Larger minimum block size
-            const offsetX = (this.nextCanvas.width - this.nextPiece.shape[0].length * blockSize) / 2;
-            const offsetY = (this.nextCanvas.height - this.nextPiece.shape.length * blockSize) / 2;
-            
-            for (let y = 0; y < this.nextPiece.shape.length; y++) {
-                for (let x = 0; x < this.nextPiece.shape[y].length; x++) {
-                    if (this.nextPiece.shape[y][x]) {
-                        const pixelX = Math.floor(offsetX + x * blockSize);
-                        const pixelY = Math.floor(offsetY + y * blockSize);
-                        const blockWidth = Math.max(blockSize - 2, 2);
-                        const blockHeight = Math.max(blockSize - 2, 2);
-                        
-                        const monochromeColor = this.convertToMonochrome(this.nextPiece.color);
-                        
-                        // Draw main block
-                        this.nextCtx.fillStyle = monochromeColor;
-                        this.nextCtx.fillRect(pixelX, pixelY, blockWidth, blockHeight);
-                        
-                        // Draw border
-                        this.nextCtx.strokeStyle = '#ffffff';
-                        this.nextCtx.lineWidth = 1;
-                        this.nextCtx.strokeRect(pixelX, pixelY, blockWidth, blockHeight);
-                        
-                        // Draw highlight
-                        this.nextCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                        this.nextCtx.fillRect(pixelX + 1, pixelY + 1, blockWidth - 2, 1);
-                        
-                        // Draw shadow
-                        this.nextCtx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-                        this.nextCtx.fillRect(pixelX + 1, pixelY + blockHeight - 1, blockWidth - 2, 1);
-                    }
+        const canvasSize = Math.min(this.nextCanvas.width, this.nextCanvas.height);
+        const blockSize = Math.max(canvasSize / 4, 8);
+        const offsetX = (this.nextCanvas.width - this.nextPiece.shape[0].length * blockSize) / 2;
+        const offsetY = (this.nextCanvas.height - this.nextPiece.shape.length * blockSize) / 2;
+        
+        for (let y = 0; y < this.nextPiece.shape.length; y++) {
+            for (let x = 0; x < this.nextPiece.shape[y].length; x++) {
+                if (this.nextPiece.shape[y][x]) {
+                    const pixelX = Math.floor(offsetX + x * blockSize);
+                    const pixelY = Math.floor(offsetY + y * blockSize);
+                    const blockWidth = Math.max(blockSize - 2, 2);
+                    const blockHeight = Math.max(blockSize - 2, 2);
+                    
+                    // Draw main block
+                    this.nextCtx.fillStyle = '#ffffff';
+                    this.nextCtx.fillRect(pixelX, pixelY, blockWidth, blockHeight);
+                    
+                    // Draw border
+                    this.nextCtx.strokeStyle = '#ffffff';
+                    this.nextCtx.lineWidth = 1;
+                    this.nextCtx.strokeRect(pixelX, pixelY, blockWidth, blockHeight);
                 }
             }
         }
     }
     
     /**
+     * Draw hold piece
+     */
+    drawHoldPiece() {
+        if (!this.holdCtx || !this.holdCanvas) return;
+        
+        this.holdCtx.imageSmoothingEnabled = false;
+        this.holdCtx.fillStyle = '#000000';
+        this.holdCtx.fillRect(0, 0, this.holdCanvas.width, this.holdCanvas.height);
+        
+        if (!this.holdPiece) return;
+        
+        const canvasSize = Math.min(this.holdCanvas.width, this.holdCanvas.height);
+        const blockSize = Math.max(canvasSize / 4, 8);
+        const offsetX = (this.holdCanvas.width - this.holdPiece.shape[0].length * blockSize) / 2;
+        const offsetY = (this.holdCanvas.height - this.holdPiece.shape.length * blockSize) / 2;
+        
+        for (let y = 0; y < this.holdPiece.shape.length; y++) {
+            for (let x = 0; x < this.holdPiece.shape[y].length; x++) {
+                if (this.holdPiece.shape[y][x]) {
+                    const pixelX = Math.floor(offsetX + x * blockSize);
+                    const pixelY = Math.floor(offsetY + y * blockSize);
+                    const blockWidth = Math.max(blockSize - 2, 2);
+                    const blockHeight = Math.max(blockSize - 2, 2);
+                    
+                    // Draw main block
+                    this.holdCtx.fillStyle = '#ffffff';
+                    this.holdCtx.fillRect(pixelX, pixelY, blockWidth, blockHeight);
+                    
+                    // Draw border
+                    this.holdCtx.strokeStyle = '#ffffff';
+                    this.holdCtx.lineWidth = 1;
+                    this.holdCtx.strokeRect(pixelX, pixelY, blockWidth, blockHeight);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Game loop
+     */
+    gameLoop() {
+        if (!this.gameRunning) return;
+        
+        const currentTime = Date.now();
+        if (currentTime - this.dropTime > this.dropInterval) {
+            this.movePiece(0, 1);
+            this.dropTime = currentTime;
+        }
+        
+        requestAnimationFrame(() => this.gameLoop());
+    }
+    
+    /**
      * Start game
      */
     startGame() {
-        if (!this.gameRunning) {
-            this.gameRunning = true;
-            this.gameLoop = setInterval(() => this.update(), 16);
-            this.startMetronome();
-        }
+        this.gameRunning = true;
+        this.dropTime = Date.now();
+        this.gameLoop();
+    }
+    
+    /**
+     * Pause game
+     */
+    pauseGame() {
+        this.gameRunning = false;
     }
     
     /**
@@ -919,9 +782,7 @@ class TetrisGame {
      */
     togglePause() {
         if (this.gameRunning) {
-            this.gameRunning = false;
-            clearInterval(this.gameLoop);
-            this.stopMetronome();
+            this.pauseGame();
         } else {
             this.startGame();
         }
@@ -932,33 +793,19 @@ class TetrisGame {
      */
     resetGame() {
         this.gameRunning = false;
-        clearInterval(this.gameLoop);
-        this.stopMetronome();
-        
         this.board = Array(this.BOARD_HEIGHT).fill().map(() => Array(this.BOARD_WIDTH).fill(0));
+        this.currentPiece = null;
+        this.nextPiece = null;
+        this.holdPiece = null;
+        this.canHold = true;
         this.score = 0;
         this.level = 1;
         this.lines = 0;
         this.dropInterval = 1000;
-        
-        this.generateNextPiece();
-        this.spawnPiece();
         this.updateDisplay();
         this.draw();
-    }
-    
-    /**
-     * Game update loop
-     */
-    update() {
-        if (!this.gameRunning) return;
-        
-        this.dropTime += 16;
-        
-        if (this.dropTime > this.dropInterval) {
-            this.movePiece(0, 1);
-            this.dropTime = 0;
-        }
+        this.drawNextPiece();
+        this.drawHoldPiece();
     }
     
     /**
@@ -966,16 +813,6 @@ class TetrisGame {
      */
     gameOver() {
         this.gameRunning = false;
-        clearInterval(this.gameLoop);
-        
-        this.addScreenShake(3);
-        this.flashScreen();
-        this.createBombasticExplosion(
-            this.canvas.offsetLeft + this.canvas.width / 2,
-            this.canvas.offsetTop + this.canvas.height / 2,
-            3
-        );
-        
         this.sounds.gameOver();
         
         setTimeout(() => {
@@ -990,7 +827,7 @@ class TetrisGame {
         this.gameScreen.classList.add('hidden');
         this.gameOverScreen.classList.remove('hidden');
         
-        document.getElementById('finalScore').textContent = this.score.toString().padStart(7, '0');
+        document.getElementById('finalScore').textContent = this.score.toString().padStart(6, '0');
         document.getElementById('finalLevel').textContent = this.level.toString().padStart(2, '0');
         document.getElementById('finalLines').textContent = this.lines.toString().padStart(3, '0');
     }
@@ -1000,162 +837,71 @@ class TetrisGame {
         this.mainMenu.classList.remove('hidden');
         this.gameScreen.classList.add('hidden');
         this.gameOverScreen.classList.add('hidden');
-        this.hideInstructions();
         this.pauseGame();
     }
     
     showGameScreen() {
-        console.log('Showing game screen...');
-        
         this.mainMenu.classList.add('hidden');
         this.gameScreen.classList.remove('hidden');
         this.gameOverScreen.classList.add('hidden');
         
-        // Resize canvas first
         this.resizeCanvas();
         this.canvas.focus();
         
-        console.log('Canvas resized:', this.canvas.width, 'x', this.canvas.height);
-        console.log('Block size:', this.BLOCK_SIZE);
-        
-        // Reset game state when showing game screen
         this.resetGame();
-        
-        // Initialize game pieces
         this.generateNextPiece();
         this.spawnPiece();
-        this.updateDisplay();
-        this.draw();
-        this.drawNextPiece();
-        
-        console.log('Current piece:', this.currentPiece);
-        console.log('Next piece:', this.nextPiece);
-        
-        // Start the game
         this.startGame();
     }
     
-    showInstructions() {
-        this.instructionsModal.classList.remove('hidden');
+    // Effects
+    addScreenShake(intensity) {
+        this.gameContainer.classList.add('shake');
+        setTimeout(() => this.gameContainer.classList.remove('shake'), 300 * intensity);
     }
     
-    hideInstructions() {
-        this.instructionsModal.classList.add('hidden');
+    flashScreen() {
+        const gameBoard = document.querySelector('.game-board');
+        gameBoard.classList.add('flash');
+        setTimeout(() => gameBoard.classList.remove('flash'), 400);
     }
     
-    pauseGame() {
-        if (this.gameRunning) {
-            this.gameRunning = false;
-            clearInterval(this.gameLoop);
-            this.stopMetronome();
-        }
-    }
-    
-    // Juice Effects
-    addScreenShake(intensity = 1) {
-        this.gameContainer.classList.remove('shake', 'shake-strong', 'shake-explosion');
-        if (intensity > 2) {
-            this.gameContainer.classList.add('shake-explosion');
-        } else if (intensity > 1) {
-            this.gameContainer.classList.add('shake-strong');
-        } else {
-            this.gameContainer.classList.add('shake');
-        }
-        
-        setTimeout(() => {
-            this.gameContainer.classList.remove('shake', 'shake-strong', 'shake-explosion');
-        }, intensity > 2 ? 1200 : intensity > 1 ? 800 : 500);
-    }
-    
-    createSnazzyParticles(x, y, count = 15) {
+    createParticles(x, y, count) {
         for (let i = 0; i < count; i++) {
             const particle = document.createElement('div');
             particle.className = 'particle';
-            
-            const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
-            const velocity = 30 + Math.random() * 80;
-            const vx = Math.cos(angle) * velocity;
-            const vy = Math.sin(angle) * velocity;
-            
             particle.style.left = x + 'px';
             particle.style.top = y + 'px';
-            particle.style.setProperty('--vx', vx + 'px');
-            particle.style.setProperty('--vy', vy + 'px');
-            
-            const size = 2 + Math.random() * 4;
-            particle.style.width = size + 'px';
-            particle.style.height = size + 'px';
-            particle.style.opacity = 0.6 + Math.random() * 0.4;
-            
             this.particleContainer.appendChild(particle);
             
             setTimeout(() => {
                 if (particle.parentNode) {
                     particle.parentNode.removeChild(particle);
                 }
-            }, 800 + Math.random() * 400);
+            }, 1200);
         }
     }
     
-    createBombasticExplosion(x, y, intensity = 1) {
-        const explosionCount = 20 + (intensity * 30);
-        
-        for (let i = 0; i < explosionCount; i++) {
-            const explosion = document.createElement('div');
-            explosion.className = 'explosion-particle';
-            
-            const angle = (Math.PI * 2 * i) / explosionCount + (Math.random() - 0.5) * 0.5;
-            const velocity = 100 + Math.random() * 100 + (intensity * 50);
-            const vx = Math.cos(angle) * velocity;
-            const vy = Math.sin(angle) * velocity;
-            
-            explosion.style.left = x + 'px';
-            explosion.style.top = y + 'px';
-            explosion.style.setProperty('--vx', vx + 'px');
-            explosion.style.setProperty('--vy', vy + 'px');
-            
-            const colors = ['#ffffff', '#cccccc', '#999999', '#666666'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            explosion.style.background = randomColor;
-            explosion.style.boxShadow = `0 0 15px ${randomColor}`;
-            
-            this.explosionContainer.appendChild(explosion);
+    createExplosion(x, y, intensity) {
+        for (let i = 0; i < intensity * 5; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'explosion-particle';
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.setProperty('--vx', (Math.random() - 0.5) * 200 + 'px');
+            particle.style.setProperty('--vy', (Math.random() - 0.5) * 200 + 'px');
+            this.explosionContainer.appendChild(particle);
             
             setTimeout(() => {
-                if (explosion.parentNode) {
-                    explosion.parentNode.removeChild(explosion);
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
                 }
-            }, 1500);
+            }, 1800);
         }
-        
-        this.addScreenShake(intensity > 2 ? 3 : 2);
-        this.sounds.explosion();
-    }
-    
-    flashScreen() {
-        const gameViewport = document.querySelector('.game-viewport');
-        gameViewport.classList.add('flash');
-        setTimeout(() => {
-            gameViewport.classList.remove('flash');
-        }, 300);
-    }
-    
-    animateScore(element) {
-        element.classList.add('animate');
-        setTimeout(() => {
-            element.classList.remove('animate');
-        }, 500);
-    }
-    
-    pulseElement(element) {
-        element.classList.add('pulse');
-        setTimeout(() => {
-            element.classList.remove('pulse');
-        }, 600);
     }
 }
 
-// Initialize the game when the page loads
+// Initialize game when page loads
 document.addEventListener('DOMContentLoaded', () => {
     new TetrisGame();
 });
