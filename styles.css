@@ -238,11 +238,11 @@ body {
 /* ===== MINIMAL BUTTONS ===== */
 .minimal-btn {
     background: transparent;
-    border: 2px solid #ffffff;
+    border: 1px solid #ffffff;
     color: #ffffff;
-    padding: 12px 24px;
+    padding: 6px 12px;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 14px;
+    font-size: 10px;
     font-weight: 500;
     cursor: pointer;
     text-transform: uppercase;
@@ -250,7 +250,7 @@ body {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
-    min-width: 100px;
+    min-width: 60px;
     transform: scale(1);
     text-shadow: 0 0 10px #ffffff;
 }
@@ -469,7 +469,7 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
 }
 
 /* ===== TOP UI: SCORES AND NEXT PIECE ===== */
@@ -479,12 +479,13 @@ body {
     align-items: center;
     width: 100%;
     max-width: 1000px;
-    padding: 0.8rem 1.5rem;
+    padding: 0.4rem 1rem;
     background: rgba(255, 255, 255, 0.02);
-    border: 2px solid #ffffff;
-    border-radius: 15px;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
     position: relative;
     flex-shrink: 0;
+    height: 60px;
 }
 
 .top-ui::before {
@@ -508,7 +509,7 @@ body {
 
 .score-section {
     display: flex;
-    gap: 3rem;
+    gap: 2rem;
     position: relative;
     z-index: 1;
 }
@@ -517,11 +518,11 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.2rem;
 }
 
 .score-label {
-    font-size: 12px;
+    font-size: 10px;
     color: #ffffff;
     letter-spacing: 0.1em;
     font-family: 'IBM Plex Mono', monospace;
@@ -530,7 +531,7 @@ body {
 }
 
 .score-value {
-    font-size: 24px;
+    font-size: 18px;
     color: #ffffff;
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 500;
@@ -541,13 +542,13 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 0.3rem;
     position: relative;
     z-index: 1;
 }
 
 .next-piece-label {
-    font-size: 14px;
+    font-size: 10px;
     color: #ffffff;
     letter-spacing: 0.1em;
     font-family: 'IBM Plex Mono', monospace;
@@ -560,9 +561,11 @@ body {
     align-items: center;
     background: #000000;
     border: 1px solid #ffffff;
-    border-radius: 8px;
-    padding: 1rem;
+    border-radius: 4px;
+    padding: 0.3rem;
     box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.2);
+    width: 50px;
+    height: 50px;
 }
 
 #nextCanvas {
@@ -650,13 +653,14 @@ body {
     align-items: center;
     width: 100%;
     max-width: 1000px;
-    padding: 0.8rem 1.5rem;
+    padding: 0.4rem 1rem;
     background: rgba(255, 255, 255, 0.02);
-    border: 2px solid #ffffff;
-    border-radius: 15px;
+    border: 1px solid #ffffff;
+    border-radius: 8px;
     position: relative;
-    gap: 1rem;
+    gap: 0.5rem;
     flex-shrink: 0;
+    height: 80px;
 }
 
 .bottom-ui::before {
@@ -680,7 +684,7 @@ body {
 
 .controls-section {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     position: relative;
     z-index: 1;
     flex-wrap: wrap;
@@ -690,32 +694,32 @@ body {
 .control-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid #ffffff;
-    border-radius: 8px;
-    min-width: 100px;
+    border-radius: 4px;
+    min-width: 70px;
     justify-content: center;
 }
 
 .key {
     background: #ffffff;
     color: #000000;
-    padding: 4px 8px;
+    padding: 2px 4px;
     border: 1px solid #ffffff;
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 500;
-    min-width: 40px;
+    min-width: 30px;
     text-align: center;
-    border-radius: 4px;
+    border-radius: 3px;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .action {
     color: #ffffff;
-    font-size: 12px;
+    font-size: 10px;
     font-family: 'IBM Plex Mono', monospace;
     font-weight: 400;
     text-shadow: 0 0 5px #ffffff;
@@ -723,7 +727,7 @@ body {
 
 .game-controls {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     position: relative;
     z-index: 1;
     justify-content: center;
@@ -1005,43 +1009,44 @@ body {
     }
     
     .game-container {
-        gap: 0.8rem;
+        gap: 0.3rem;
         max-width: 100%;
     }
     
     .top-ui, .bottom-ui {
         flex-direction: column;
-        gap: 0.8rem;
-        padding: 0.6rem 1rem;
+        gap: 0.3rem;
+        padding: 0.3rem 0.8rem;
         max-width: 100%;
+        height: auto;
     }
     
     .score-section {
-        gap: 1.5rem;
+        gap: 1rem;
     }
     
     .controls-section {
         flex-wrap: wrap;
         justify-content: center;
-        gap: 0.6rem;
+        gap: 0.3rem;
     }
     
     .control-item {
-        min-width: 80px;
-        padding: 0.3rem 0.6rem;
-        font-size: 11px;
+        min-width: 60px;
+        padding: 0.2rem 0.4rem;
+        font-size: 9px;
     }
     
     .game-controls {
         flex-wrap: wrap;
         justify-content: center;
-        gap: 0.8rem;
+        gap: 0.3rem;
     }
     
     .minimal-btn {
-        min-width: 80px;
-        font-size: 12px;
-        padding: 10px 20px;
+        min-width: 50px;
+        font-size: 9px;
+        padding: 4px 8px;
     }
     
     .title-text {
@@ -1055,8 +1060,8 @@ body {
     
     .game-viewport {
         max-width: 100%;
-        max-height: 70vh;
-        padding: 0.5rem;
+        max-height: 75vh;
+        padding: 0.3rem;
     }
 }
 

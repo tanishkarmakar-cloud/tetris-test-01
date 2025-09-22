@@ -195,7 +195,7 @@ class TetrisGame {
     resizeNextCanvas() {
         const nextContainer = document.querySelector('.next-piece-container');
         if (nextContainer) {
-            const nextSize = Math.min(nextContainer.clientWidth - 20, nextContainer.clientHeight - 20, 80);
+            const nextSize = Math.min(nextContainer.clientWidth - 6, nextContainer.clientHeight - 6, 40);
             this.nextCanvas.width = nextSize;
             this.nextCanvas.height = nextSize;
             this.nextCanvas.style.width = nextSize + 'px';
