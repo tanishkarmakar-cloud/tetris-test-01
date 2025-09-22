@@ -40,8 +40,30 @@
             </div>
             
             <div class="menu-buttons">
-                <button id="playBtn" class="minimal-btn primary">START</button>
+                <button id="playBtn" class="minimal-btn primary">START MISSION</button>
                 <button id="instructionsBtn" class="minimal-btn secondary">MANUAL</button>
+            </div>
+            
+            <div class="controls-section">
+                <h3>CONTROLS</h3>
+                <div class="controls-grid">
+                    <div class="control-item">
+                        <span class="key">← →</span>
+                        <span class="action">MOVE</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">↓</span>
+                        <span class="action">SOFT DROP</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">↑</span>
+                        <span class="action">ROTATE</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">SPACE</span>
+                        <span class="action">HARD DROP</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -83,47 +105,48 @@
     <!-- Game Screen -->
     <div id="gameScreen" class="game-screen hidden">
         <div class="game-container" id="gameContainer">
-            <div class="game-header">
-                <div class="header-left">
-                    <button id="backToMenu" class="minimal-btn secondary">← MENU</button>
-                </div>
-                <div class="header-center">
-                    <div class="score-display">
-                        <div class="score-item">
-                            <span class="score-label">SCORE</span>
-                            <span id="score" class="score-value">0000000</span>
-                        </div>
-                        <div class="score-item">
-                            <span class="score-label">LEVEL</span>
-                            <span id="level" class="score-value">01</span>
-                        </div>
-                        <div class="score-item">
-                            <span class="score-label">LINES</span>
-                            <span id="lines" class="score-value">000</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <div class="game-controls">
-                        <button id="startBtn" class="minimal-btn primary">START</button>
-                        <button id="pauseBtn" class="minimal-btn secondary">PAUSE</button>
-                        <button id="resetBtn" class="minimal-btn danger">RESET</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="game-main">
-                <div class="game-area">
+            <div class="game-layout">
+                <!-- Left Pane: Full Height Game Viewport -->
+                <div class="game-viewport-pane">
                     <div class="game-viewport">
                         <canvas id="gameCanvas"></canvas>
                         <div id="particleContainer" class="particle-container"></div>
                     </div>
-                    <div class="game-sidebar">
-                        <div class="next-piece-panel">
-                            <div class="panel-title">NEXT</div>
-                            <div class="next-piece-container">
-                                <canvas id="nextCanvas"></canvas>
+                </div>
+                
+                <!-- Right Pane: All Game UI -->
+                <div class="game-ui-pane">
+                    <div class="ui-section">
+                        <h3>MISSION STATUS</h3>
+                        <div class="score-display">
+                            <div class="score-item">
+                                <span class="score-label">SCORE</span>
+                                <span id="score" class="score-value">0000000</span>
                             </div>
+                            <div class="score-item">
+                                <span class="score-label">LEVEL</span>
+                                <span id="level" class="score-value">01</span>
+                            </div>
+                            <div class="score-item">
+                                <span class="score-label">LINES</span>
+                                <span id="lines" class="score-value">000</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="ui-section">
+                        <h3>NEXT BLOCK</h3>
+                        <div class="next-piece-container">
+                            <canvas id="nextCanvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="ui-section">
+                        <h3>MISSION CONTROLS</h3>
+                        <div class="game-controls">
+                            <button id="pauseBtn" class="minimal-btn secondary">PAUSE</button>
+                            <button id="resetBtn" class="minimal-btn danger">RESET</button>
+                            <button id="backToMenu" class="minimal-btn secondary">← MENU</button>
                         </div>
                     </div>
                 </div>

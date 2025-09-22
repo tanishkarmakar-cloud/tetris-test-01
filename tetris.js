@@ -102,8 +102,8 @@ class TetrisGame {
         const gameViewport = document.querySelector('.game-viewport');
         if (!gameViewport) return;
         
-        const containerWidth = gameViewport.clientWidth - 32; // Account for padding
-        const containerHeight = gameViewport.clientHeight - 32;
+        const containerWidth = gameViewport.clientWidth - 40; // Account for padding
+        const containerHeight = gameViewport.clientHeight - 40; // Account for padding
         
         // Calculate optimal canvas size
         const aspectRatio = this.BOARD_WIDTH / this.BOARD_HEIGHT;
@@ -111,14 +111,18 @@ class TetrisGame {
         
         if (containerWidth / containerHeight > aspectRatio) {
             // Container is wider than needed
-            canvasHeight = Math.min(containerHeight, 600);
+            canvasHeight = containerHeight;
             canvasWidth = canvasHeight * aspectRatio;
         } else {
             // Container is taller than needed
-            canvasWidth = Math.min(containerWidth, 300);
+            canvasWidth = containerWidth;
             canvasHeight = canvasWidth / aspectRatio;
         }
         
+        // Ensure canvas dimensions are integers to prevent rendering issues
+        canvasWidth = Math.floor(canvasWidth);
+        canvasHeight = Math.floor(canvasHeight);
+
         // Set canvas size
         this.canvas.width = canvasWidth;
         this.canvas.height = canvasHeight;
@@ -131,7 +135,7 @@ class TetrisGame {
         // Resize next piece canvas
         const nextContainer = document.querySelector('.next-piece-container');
         if (nextContainer) {
-            const nextSize = Math.min(nextContainer.clientWidth - 16, nextContainer.clientHeight - 16, 120);
+            const nextSize = Math.min(nextContainer.clientWidth - 30, nextContainer.clientHeight - 30, 100);
             this.nextCanvas.width = nextSize;
             this.nextCanvas.height = nextSize;
             this.nextCanvas.style.width = nextSize + 'px';
@@ -161,7 +165,6 @@ class TetrisGame {
         document.getElementById('backToMenu').addEventListener('click', () => this.showMainMenu());
         
         // Game control events
-        document.getElementById('startBtn').addEventListener('click', () => this.startGame());
         document.getElementById('pauseBtn').addEventListener('click', () => this.togglePause());
         document.getElementById('resetBtn').addEventListener('click', () => this.resetGame());
         
@@ -275,6 +278,8 @@ class TetrisGame {
         this.gameScreen.classList.remove('hidden');
         this.resizeCanvas();
         this.canvas.focus();
+        // Auto-start the game when entering game screen
+        this.startGame();
     }
     
     showInstructions() {
