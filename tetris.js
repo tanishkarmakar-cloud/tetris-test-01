@@ -24,19 +24,21 @@ class TetrisGame {
         this.mainMenu = document.getElementById('mainMenu');
         this.gameScreen = document.getElementById('gameScreen');
         this.instructionsModal = document.getElementById('instructionsModal');
-        this.openingCrawl = document.getElementById('openingCrawl');
+        this.gameOverScreen = document.getElementById('gameOverScreen');
         this.gameContainer = document.getElementById('gameContainer');
         this.particleContainer = document.getElementById('particleContainer');
+        this.explosionContainer = document.getElementById('explosionContainer');
         
         // Juice effects
         this.screenShakeIntensity = 0;
         this.particles = [];
+        this.explosions = [];
+        
+        // Sound effects
+        this.sounds = this.initSounds();
         
         // Responsive canvas sizing
         this.setupResponsiveCanvas();
-        
-        // Start with opening crawl
-        this.startOpeningCrawl();
         
         // Tetris pieces (Tetrominoes)
         this.pieces = [
@@ -159,14 +161,31 @@ class TetrisGame {
     
     setupEventListeners() {
         // Main menu events
-        document.getElementById('playBtn').addEventListener('click', () => this.showGameScreen());
-        document.getElementById('instructionsBtn').addEventListener('click', () => this.showInstructions());
+        document.getElementById('playBtn').addEventListener('click', () => {
+            this.sounds.button();
+            this.showGameScreen();
+        });
         document.getElementById('closeInstructions').addEventListener('click', () => this.hideInstructions());
-        document.getElementById('backToMenu').addEventListener('click', () => this.showMainMenu());
+        document.getElementById('backToMenu').addEventListener('click', () => {
+            this.sounds.button();
+            this.showMainMenu();
+        });
         
         // Game control events
-        document.getElementById('pauseBtn').addEventListener('click', () => this.togglePause());
-        document.getElementById('resetBtn').addEventListener('click', () => this.resetGame());
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            this.sounds.button();
+            this.togglePause();
+        });
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            this.sounds.button();
+            this.resetGame();
+        });
+        
+        // Game over screen events
+        document.getElementById('playAgainBtn').addEventListener('click', () => {
+            this.sounds.button();
+            this.showGameScreen();
+        });
         
         // Prevent default behavior for arrow keys and space
         document.addEventListener('keydown', (e) => {
@@ -196,12 +215,54 @@ class TetrisGame {
         });
     }
     
-    // Star Wars Opening Crawl
-    startOpeningCrawl() {
-        setTimeout(() => {
-            this.openingCrawl.classList.add('hidden');
-            this.mainMenu.classList.remove('hidden');
-        }, 15000); // 15 seconds for the crawl
+    // Sound Effects
+    initSounds() {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const createTone = (frequency, duration, type = 'square') => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        };
+        
+        return {
+            move: () => createTone(200, 0.1, 'square'),
+            rotate: () => createTone(300, 0.1, 'square'),
+            drop: () => createTone(150, 0.2, 'sawtooth'),
+            lineClear: () => {
+                createTone(400, 0.1, 'square');
+                setTimeout(() => createTone(500, 0.1, 'square'), 50);
+                setTimeout(() => createTone(600, 0.1, 'square'), 100);
+                setTimeout(() => createTone(700, 0.2, 'square'), 150);
+            },
+            explosion: () => {
+                createTone(100, 0.3, 'sawtooth');
+                setTimeout(() => createTone(80, 0.3, 'sawtooth'), 100);
+                setTimeout(() => createTone(60, 0.3, 'sawtooth'), 200);
+            },
+            gameOver: () => {
+                createTone(200, 0.5, 'sawtooth');
+                setTimeout(() => createTone(150, 0.5, 'sawtooth'), 200);
+                setTimeout(() => createTone(100, 0.5, 'sawtooth'), 400);
+            },
+            button: () => createTone(800, 0.1, 'square'),
+            levelUp: () => {
+                createTone(500, 0.2, 'square');
+                setTimeout(() => createTone(600, 0.2, 'square'), 100);
+                setTimeout(() => createTone(700, 0.2, 'square'), 200);
+            }
+        };
     }
     
     // Juice Effects
@@ -243,6 +304,43 @@ class TetrisGame {
         }
     }
     
+    createBombasticExplosion(x, y, intensity = 1) {
+        const explosionCount = 20 + (intensity * 30);
+        
+        for (let i = 0; i < explosionCount; i++) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion-particle';
+            
+            const angle = (Math.PI * 2 * i) / explosionCount + (Math.random() - 0.5) * 0.5;
+            const velocity = 100 + Math.random() * 100 + (intensity * 50);
+            const vx = Math.cos(angle) * velocity;
+            const vy = Math.sin(angle) * velocity;
+            
+            explosion.style.left = x + 'px';
+            explosion.style.top = y + 'px';
+            explosion.style.setProperty('--vx', vx + 'px');
+            explosion.style.setProperty('--vy', vy + 'px');
+            
+            // Random colors for explosion
+            const colors = ['#ff0000', '#ff6600', '#ffaa00', '#ffff00'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            explosion.style.background = randomColor;
+            explosion.style.boxShadow = `0 0 15px ${randomColor}`;
+            
+            this.explosionContainer.appendChild(explosion);
+            
+            setTimeout(() => {
+                if (explosion.parentNode) {
+                    explosion.parentNode.removeChild(explosion);
+                }
+            }, 1500);
+        }
+        
+        // Add screen shake for explosion
+        this.addScreenShake(intensity > 2 ? 3 : 2);
+        this.sounds.explosion();
+    }
+    
     flashScreen() {
         const gameViewport = document.querySelector('.game-viewport');
         gameViewport.classList.add('flash');
@@ -269,6 +367,7 @@ class TetrisGame {
     showMainMenu() {
         this.mainMenu.classList.remove('hidden');
         this.gameScreen.classList.add('hidden');
+        this.gameOverScreen.classList.add('hidden');
         this.hideInstructions();
         this.pauseGame();
     }
@@ -276,6 +375,7 @@ class TetrisGame {
     showGameScreen() {
         this.mainMenu.classList.add('hidden');
         this.gameScreen.classList.remove('hidden');
+        this.gameOverScreen.classList.add('hidden');
         this.resizeCanvas();
         this.canvas.focus();
         // Auto-start the game when entering game screen
@@ -298,22 +398,33 @@ class TetrisGame {
     }
     
     handleKeyPress(e) {
+        if (e.code === 'KeyP') {
+            this.sounds.button();
+            this.togglePause();
+            return;
+        }
+        
         if (!this.gameRunning || !this.currentPiece) return;
         
         switch(e.code) {
             case 'ArrowLeft':
+                this.sounds.move();
                 this.movePiece(-1, 0);
                 break;
             case 'ArrowRight':
+                this.sounds.move();
                 this.movePiece(1, 0);
                 break;
             case 'ArrowDown':
+                this.sounds.drop();
                 this.movePiece(0, 1);
                 break;
             case 'ArrowUp':
+                this.sounds.rotate();
                 this.rotatePiece();
                 break;
             case 'Space':
+                this.sounds.drop();
                 this.hardDrop();
                 break;
         }
@@ -456,14 +567,24 @@ class TetrisGame {
             this.level = Math.floor(this.lines / 10) + 1;
             this.dropInterval = Math.max(50, 1000 - (this.level - 1) * 50);
             
-            // Add massive juice for line clears
-            this.addScreenShake(linesCleared > 2 ? 2 : 1.5);
+            // Add bombastic explosion effects for line clears
+            this.addScreenShake(linesCleared > 2 ? 3 : 2);
             this.flashScreen();
+            this.createBombasticExplosion(
+                this.canvas.offsetLeft + this.canvas.width / 2,
+                this.canvas.offsetTop + this.canvas.height / 2,
+                linesCleared
+            );
+            
+            // Add regular particles too
             this.createParticles(
                 this.canvas.offsetLeft + this.canvas.width / 2,
                 this.canvas.offsetTop + this.canvas.height / 2,
-                linesCleared * 20
+                linesCleared * 15
             );
+            
+            // Play line clear sound
+            this.sounds.lineClear();
             
             // Animate score elements
             this.animateScore(document.getElementById('score'));
@@ -471,6 +592,7 @@ class TetrisGame {
             if (this.level > Math.floor((this.lines - linesCleared) / 10) + 1) {
                 this.animateScore(document.getElementById('level'));
                 this.pulseElement(document.querySelector('.game-viewport'));
+                this.sounds.levelUp();
             }
             
             this.updateDisplay();
@@ -708,15 +830,29 @@ class TetrisGame {
         // Add massive juice for game over
         this.addScreenShake(3);
         this.flashScreen();
-        this.createParticles(
+        this.createBombasticExplosion(
             this.canvas.offsetLeft + this.canvas.width / 2,
             this.canvas.offsetTop + this.canvas.height / 2,
-            50
+            3
         );
         
+        // Play game over sound
+        this.sounds.gameOver();
+        
+        // Show game over screen after effects
         setTimeout(() => {
-            alert(`Game Over! Final Score: ${this.score}`);
-        }, 1000);
+            this.showGameOverScreen();
+        }, 1500);
+    }
+    
+    showGameOverScreen() {
+        this.gameScreen.classList.add('hidden');
+        this.gameOverScreen.classList.remove('hidden');
+        
+        // Update final score display
+        document.getElementById('finalScore').textContent = this.score.toString().padStart(7, '0');
+        document.getElementById('finalLevel').textContent = this.level.toString().padStart(2, '0');
+        document.getElementById('finalLines').textContent = this.lines.toString().padStart(3, '0');
     }
 }
 
