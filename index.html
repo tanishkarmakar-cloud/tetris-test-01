@@ -3,40 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tetris Game</title>
+    <title>Retro Tetris</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="game-container">
-        <div class="game-header">
-            <h1>Tetris</h1>
-            <div class="score-board">
-                <div class="score">Score: <span id="score">0</span></div>
-                <div class="level">Level: <span id="level">1</span></div>
-                <div class="lines">Lines: <span id="lines">0</span></div>
+    <!-- Main Menu Screen -->
+    <div id="mainMenu" class="main-menu">
+        <div class="menu-container">
+            <div class="retro-title">
+                <h1 class="title-text">TETRIS</h1>
+                <div class="title-subtitle">CLASSIC ARCADE</div>
+            </div>
+            
+            <div class="menu-buttons">
+                <button id="playBtn" class="retro-btn primary">PLAY GAME</button>
+                <button id="instructionsBtn" class="retro-btn secondary">INSTRUCTIONS</button>
+                <button id="highScoresBtn" class="retro-btn secondary">HIGH SCORES</button>
+            </div>
+            
+            <div class="retro-decoration">
+                <div class="pixel-border"></div>
             </div>
         </div>
-        
-        <div class="game-area">
-            <canvas id="gameCanvas" width="300" height="600"></canvas>
-            <div class="next-piece">
-                <h3>Next Piece</h3>
-                <canvas id="nextCanvas" width="120" height="120"></canvas>
+    </div>
+
+    <!-- Instructions Modal -->
+    <div id="instructionsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>HOW TO PLAY</h2>
+                <button id="closeInstructions" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="controls-grid">
+                    <div class="control-item">
+                        <div class="control-key">← →</div>
+                        <div class="control-desc">Move left/right</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">↓</div>
+                        <div class="control-desc">Soft drop</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">↑</div>
+                        <div class="control-desc">Rotate piece</div>
+                    </div>
+                    <div class="control-item">
+                        <div class="control-key">SPACE</div>
+                        <div class="control-desc">Hard drop</div>
+                    </div>
+                </div>
+                <div class="game-rules">
+                    <h3>OBJECTIVE</h3>
+                    <p>Fill complete horizontal lines to clear them and score points. The game gets faster as you progress through levels!</p>
+                </div>
             </div>
         </div>
-        
-        <div class="controls">
-            <div class="control-buttons">
-                <button id="startBtn">Start Game</button>
-                <button id="pauseBtn">Pause</button>
-                <button id="resetBtn">Reset</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="game-screen hidden">
+        <div class="game-container">
+            <div class="game-header">
+                <div class="header-left">
+                    <button id="backToMenu" class="back-btn">← MENU</button>
+                </div>
+                <div class="header-center">
+                    <h1 class="game-title">TETRIS</h1>
+                </div>
+                <div class="header-right">
+                    <div class="score-display">
+                        <div class="score-item">
+                            <span class="score-label">SCORE</span>
+                            <span id="score" class="score-value">0</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="score-label">LEVEL</span>
+                            <span id="level" class="score-value">1</span>
+                        </div>
+                        <div class="score-item">
+                            <span class="score-label">LINES</span>
+                            <span id="lines" class="score-value">0</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="instructions">
-                <h3>Controls:</h3>
-                <p>← → Move left/right</p>
-                <p>↓ Soft drop</p>
-                <p>↑ Rotate</p>
-                <p>Space Hard drop</p>
+            
+            <div class="game-main">
+                <div class="game-area">
+                    <div class="game-viewport">
+                        <canvas id="gameCanvas"></canvas>
+                    </div>
+                    <div class="game-sidebar">
+                        <div class="next-piece-panel">
+                            <h3>NEXT</h3>
+                            <div class="next-piece-container">
+                                <canvas id="nextCanvas"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="controls-panel">
+                            <h3>CONTROLS</h3>
+                            <div class="controls-grid-small">
+                                <div class="control-row">
+                                    <span class="key">← →</span>
+                                    <span class="action">Move</span>
+                                </div>
+                                <div class="control-row">
+                                    <span class="key">↓</span>
+                                    <span class="action">Drop</span>
+                                </div>
+                                <div class="control-row">
+                                    <span class="key">↑</span>
+                                    <span class="action">Rotate</span>
+                                </div>
+                                <div class="control-row">
+                                    <span class="key">SPACE</span>
+                                    <span class="action">Hard Drop</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="game-controls">
+                    <div class="control-buttons">
+                        <button id="startBtn" class="game-btn start">START</button>
+                        <button id="pauseBtn" class="game-btn pause">PAUSE</button>
+                        <button id="resetBtn" class="game-btn reset">RESET</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

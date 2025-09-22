@@ -20,6 +20,14 @@ class TetrisGame {
         this.dropTime = 0;
         this.dropInterval = 1000; // 1 second
         
+        // UI elements
+        this.mainMenu = document.getElementById('mainMenu');
+        this.gameScreen = document.getElementById('gameScreen');
+        this.instructionsModal = document.getElementById('instructionsModal');
+        
+        // Responsive canvas sizing
+        this.setupResponsiveCanvas();
+        
         // Tetris pieces (Tetrominoes)
         this.pieces = [
             {
@@ -75,6 +83,58 @@ class TetrisGame {
         this.init();
     }
     
+    setupResponsiveCanvas() {
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+    }
+    
+    resizeCanvas() {
+        const gameViewport = document.querySelector('.game-viewport');
+        if (!gameViewport) return;
+        
+        const containerWidth = gameViewport.clientWidth - 32; // Account for padding
+        const containerHeight = gameViewport.clientHeight - 32;
+        
+        // Calculate optimal canvas size
+        const aspectRatio = this.BOARD_WIDTH / this.BOARD_HEIGHT;
+        let canvasWidth, canvasHeight;
+        
+        if (containerWidth / containerHeight > aspectRatio) {
+            // Container is wider than needed
+            canvasHeight = Math.min(containerHeight, 600);
+            canvasWidth = canvasHeight * aspectRatio;
+        } else {
+            // Container is taller than needed
+            canvasWidth = Math.min(containerWidth, 300);
+            canvasHeight = canvasWidth / aspectRatio;
+        }
+        
+        // Set canvas size
+        this.canvas.width = canvasWidth;
+        this.canvas.height = canvasHeight;
+        this.canvas.style.width = canvasWidth + 'px';
+        this.canvas.style.height = canvasHeight + 'px';
+        
+        // Update block size based on canvas size
+        this.BLOCK_SIZE = canvasWidth / this.BOARD_WIDTH;
+        
+        // Resize next piece canvas
+        const nextContainer = document.querySelector('.next-piece-container');
+        if (nextContainer) {
+            const nextSize = Math.min(nextContainer.clientWidth - 16, nextContainer.clientHeight - 16, 120);
+            this.nextCanvas.width = nextSize;
+            this.nextCanvas.height = nextSize;
+            this.nextCanvas.style.width = nextSize + 'px';
+            this.nextCanvas.style.height = nextSize + 'px';
+        }
+        
+        // Redraw if game is initialized
+        if (this.currentPiece !== null) {
+            this.draw();
+            this.drawNextPiece();
+        }
+    }
+    
     init() {
         this.setupEventListeners();
         this.generateNextPiece();
@@ -84,6 +144,13 @@ class TetrisGame {
     }
     
     setupEventListeners() {
+        // Main menu events
+        document.getElementById('playBtn').addEventListener('click', () => this.showGameScreen());
+        document.getElementById('instructionsBtn').addEventListener('click', () => this.showInstructions());
+        document.getElementById('closeInstructions').addEventListener('click', () => this.hideInstructions());
+        document.getElementById('backToMenu').addEventListener('click', () => this.showMainMenu());
+        
+        // Game control events
         document.getElementById('startBtn').addEventListener('click', () => this.startGame());
         document.getElementById('pauseBtn').addEventListener('click', () => this.togglePause());
         document.getElementById('resetBtn').addEventListener('click', () => this.resetGame());
@@ -101,10 +168,49 @@ class TetrisGame {
         this.canvas.setAttribute('tabindex', '0');
         this.canvas.focus();
         
-        // Refocus on canvas when clicking anywhere
-        document.addEventListener('click', () => {
-            this.canvas.focus();
+        // Refocus on canvas when clicking anywhere in game screen
+        document.addEventListener('click', (e) => {
+            if (this.gameScreen && !this.gameScreen.classList.contains('hidden')) {
+                this.canvas.focus();
+            }
         });
+        
+        // Close modal when clicking outside
+        this.instructionsModal.addEventListener('click', (e) => {
+            if (e.target === this.instructionsModal) {
+                this.hideInstructions();
+            }
+        });
+    }
+    
+    // UI Management Methods
+    showMainMenu() {
+        this.mainMenu.classList.remove('hidden');
+        this.gameScreen.classList.add('hidden');
+        this.hideInstructions();
+        this.pauseGame();
+    }
+    
+    showGameScreen() {
+        this.mainMenu.classList.add('hidden');
+        this.gameScreen.classList.remove('hidden');
+        this.resizeCanvas();
+        this.canvas.focus();
+    }
+    
+    showInstructions() {
+        this.instructionsModal.classList.remove('hidden');
+    }
+    
+    hideInstructions() {
+        this.instructionsModal.classList.add('hidden');
+    }
+    
+    pauseGame() {
+        if (this.gameRunning) {
+            this.gameRunning = false;
+            clearInterval(this.gameLoop);
+        }
     }
     
     handleKeyPress(e) {
@@ -329,7 +435,8 @@ class TetrisGame {
         this.nextCtx.fillRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
         
         if (this.nextPiece) {
-            const blockSize = 20;
+            const canvasSize = Math.min(this.nextCanvas.width, this.nextCanvas.height);
+            const blockSize = canvasSize / 6; // Scale based on canvas size
             const offsetX = (this.nextCanvas.width - this.nextPiece.shape[0].length * blockSize) / 2;
             const offsetY = (this.nextCanvas.height - this.nextPiece.shape.length * blockSize) / 2;
             
@@ -344,7 +451,7 @@ class TetrisGame {
                             blockSize
                         );
                         
-                        this.nextCtx.strokeStyle = '#333';
+                        this.nextCtx.strokeStyle = '#00ff00';
                         this.nextCtx.lineWidth = 1;
                         this.nextCtx.strokeRect(
                             offsetX + x * blockSize,
