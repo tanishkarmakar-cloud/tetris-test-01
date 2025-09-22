@@ -38,6 +38,8 @@ class TetrisGame {
         this.sounds = this.initSounds();
         this.metronome = null;
         this.metronomeInterval = null;
+        this.rhythmMode = false;
+        this.beatCount = 0;
         
         // Responsive canvas sizing
         this.setupResponsiveCanvas();
@@ -109,18 +111,20 @@ class TetrisGame {
         const containerWidth = gameViewport.clientWidth - 40; // Account for padding
         const containerHeight = gameViewport.clientHeight - 40; // Account for padding
         
-        // Calculate optimal canvas size
-        const aspectRatio = this.BOARD_WIDTH / this.BOARD_HEIGHT;
+        // Calculate optimal canvas size for 4:3 aspect ratio
+        const targetAspectRatio = 4 / 3;
+        const containerAspectRatio = containerWidth / containerHeight;
+        
         let canvasWidth, canvasHeight;
         
-        if (containerWidth / containerHeight > aspectRatio) {
-            // Container is wider than needed
+        if (containerAspectRatio > targetAspectRatio) {
+            // Container is wider than 4:3, fit to height
             canvasHeight = containerHeight;
-            canvasWidth = canvasHeight * aspectRatio;
+            canvasWidth = canvasHeight * targetAspectRatio;
         } else {
-            // Container is taller than needed
+            // Container is taller than 4:3, fit to width
             canvasWidth = containerWidth;
-            canvasHeight = canvasWidth / aspectRatio;
+            canvasHeight = canvasWidth / targetAspectRatio;
         }
         
         // Ensure canvas dimensions are integers to prevent rendering issues
@@ -139,7 +143,7 @@ class TetrisGame {
         // Resize next piece canvas
         const nextContainer = document.querySelector('.next-piece-container');
         if (nextContainer) {
-            const nextSize = Math.min(nextContainer.clientWidth - 30, nextContainer.clientHeight - 30, 100);
+            const nextSize = Math.min(nextContainer.clientWidth - 20, nextContainer.clientHeight - 20, 80);
             this.nextCanvas.width = nextSize;
             this.nextCanvas.height = nextSize;
             this.nextCanvas.style.width = nextSize + 'px';
@@ -264,16 +268,41 @@ class TetrisGame {
                 setTimeout(() => createTone(600, 0.2, 'square'), 100);
                 setTimeout(() => createTone(700, 0.2, 'square'), 200);
             },
-            metronome: () => createTone(440, 0.05, 'sine')
+            metronome: () => createTone(440, 0.05, 'sine'),
+            // Rhythmic music tones
+            kick: () => createTone(60, 0.2, 'sawtooth'),
+            snare: () => createTone(200, 0.1, 'square'),
+            hihat: () => createTone(800, 0.05, 'square'),
+            bass: () => createTone(80, 0.3, 'sawtooth'),
+            lead: () => createTone(440, 0.2, 'sine')
         };
     }
     
     startMetronome() {
         if (this.metronomeInterval) return;
         
-        // Start metronome at 120 BPM (500ms intervals)
+        // Start rhythmic metronome at 120 BPM (500ms intervals)
         this.metronomeInterval = setInterval(() => {
-            this.sounds.metronome();
+            this.beatCount++;
+            
+            // Create rhythmic pattern
+            if (this.beatCount % 4 === 1) {
+                // Beat 1: Kick + Metronome
+                this.sounds.kick();
+                this.sounds.metronome();
+            } else if (this.beatCount % 4 === 3) {
+                // Beat 3: Snare + Metronome
+                this.sounds.snare();
+                this.sounds.metronome();
+            } else {
+                // Beats 2 & 4: Just metronome
+                this.sounds.metronome();
+            }
+            
+            // Add hihat on off-beats
+            if (this.beatCount % 2 === 0) {
+                setTimeout(() => this.sounds.hihat(), 250);
+            }
         }, 500);
     }
     
@@ -462,23 +491,23 @@ class TetrisGame {
         
         switch(e.code) {
             case 'ArrowLeft':
-                this.sounds.move();
+                this.sounds.hihat();
                 this.movePiece(-1, 0);
                 break;
             case 'ArrowRight':
-                this.sounds.move();
+                this.sounds.hihat();
                 this.movePiece(1, 0);
                 break;
             case 'ArrowDown':
-                this.sounds.drop();
+                this.sounds.bass();
                 this.movePiece(0, 1);
                 break;
             case 'ArrowUp':
-                this.sounds.rotate();
+                this.sounds.lead();
                 this.rotatePiece();
                 break;
             case 'Space':
-                this.sounds.drop();
+                this.sounds.kick();
                 this.hardDrop();
                 break;
         }
@@ -674,6 +703,18 @@ class TetrisGame {
             }
         }
         
+        // Draw ghost piece (where current piece will land)
+        if (this.currentPiece) {
+            const ghostY = this.getGhostPieceY();
+            for (let y = 0; y < this.currentPiece.shape.length; y++) {
+                for (let x = 0; x < this.currentPiece.shape[y].length; x++) {
+                    if (this.currentPiece.shape[y][x]) {
+                        this.drawGhostBlock(this.currentPiece.x + x, ghostY + y);
+                    }
+                }
+            }
+        }
+        
         // Draw current piece
         if (this.currentPiece) {
             for (let y = 0; y < this.currentPiece.shape.length; y++) {
@@ -719,6 +760,56 @@ class TetrisGame {
         // Add subtle shadow
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         this.ctx.fillRect(pixelX + 1, pixelY + this.BLOCK_SIZE - 2, this.BLOCK_SIZE - 2, 1);
+    }
+    
+    drawGhostBlock(x, y) {
+        const pixelX = x * this.BLOCK_SIZE;
+        const pixelY = y * this.BLOCK_SIZE;
+        
+        // Enable pixel-perfect rendering
+        this.ctx.imageSmoothingEnabled = false;
+        
+        // Draw ghost block with dashed border
+        this.ctx.strokeStyle = '#666666';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([4, 4]);
+        this.ctx.strokeRect(pixelX + 2, pixelY + 2, this.BLOCK_SIZE - 4, this.BLOCK_SIZE - 4);
+        this.ctx.setLineDash([]);
+        
+        // Add subtle fill
+        this.ctx.fillStyle = 'rgba(102, 102, 102, 0.1)';
+        this.ctx.fillRect(pixelX + 2, pixelY + 2, this.BLOCK_SIZE - 4, this.BLOCK_SIZE - 4);
+    }
+    
+    getGhostPieceY() {
+        if (!this.currentPiece) return 0;
+        
+        let ghostY = this.currentPiece.y;
+        while (this.isValidMove(0, 1, this.currentPiece.shape, ghostY + 1)) {
+            ghostY++;
+        }
+        return ghostY;
+    }
+    
+    isValidMove(offsetX, offsetY, shape, testY = null) {
+        const testX = this.currentPiece.x + offsetX;
+        const testYPos = testY !== null ? testY : this.currentPiece.y + offsetY;
+        
+        for (let y = 0; y < shape.length; y++) {
+            for (let x = 0; x < shape[y].length; x++) {
+                if (shape[y][x]) {
+                    const boardX = testX + x;
+                    const boardY = testYPos + y;
+                    
+                    if (boardX < 0 || boardX >= this.BOARD_WIDTH ||
+                        boardY < 0 || boardY >= this.BOARD_HEIGHT ||
+                        (boardY >= 0 && this.board[boardY][boardX] !== 0)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
     
     convertToMonochrome(color) {
