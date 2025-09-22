@@ -134,8 +134,8 @@ class TetrisGame {
         const gameViewport = document.querySelector('.game-viewport');
         if (!gameViewport) return;
         
-        const containerWidth = gameViewport.clientWidth - 20; // Reduced padding
-        const containerHeight = gameViewport.clientHeight - 20; // Reduced padding
+        const containerWidth = gameViewport.clientWidth - 10; // Minimal padding
+        const containerHeight = gameViewport.clientHeight - 10; // Minimal padding
         
         // Calculate optimal canvas size for 4:3 aspect ratio
         const targetAspectRatio = 4 / 3;
@@ -195,7 +195,7 @@ class TetrisGame {
     resizeNextCanvas() {
         const nextContainer = document.querySelector('.next-piece-container');
         if (nextContainer) {
-            const nextSize = Math.min(nextContainer.clientWidth - 6, nextContainer.clientHeight - 6, 40);
+            const nextSize = Math.min(nextContainer.clientWidth - 4, nextContainer.clientHeight - 4, 30);
             this.nextCanvas.width = nextSize;
             this.nextCanvas.height = nextSize;
             this.nextCanvas.style.width = nextSize + 'px';
