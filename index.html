@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TETRIS - 80s Minimalism</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- CRT Effects Overlay -->
+    <div class="crt-overlay">
+        <div class="scanlines"></div>
+        <div class="screen-warp"></div>
+        <div class="chromatic-aberration"></div>
+    </div>
+
+    <!-- Main Menu Screen -->
+    <div id="mainMenu" class="main-menu">
+        <div class="menu-container">
+            <h1 class="title-text">TETRIS</h1>
+            <button id="playBtn" class="start-btn">START</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="game-screen hidden">
+        <div class="game-container">
+            <!-- Left Panel - Hold & Score -->
+            <div class="left-panel">
+                <div class="hold-section">
+                    <div class="section-label">HOLD</div>
+                    <div class="hold-box">
+                        <canvas id="holdCanvas"></canvas>
+                    </div>
+                </div>
+                
+                <div class="score-section">
+                    <div class="score-item">
+                        <div class="score-label">SCORE</div>
+                        <div id="score" class="score-value">000000</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-label">LEVEL</div>
+                        <div id="level" class="score-value">01</div>
+                    </div>
+                    <div class="score-item">
+                        <div class="score-label">LINES</div>
+                        <div id="lines" class="score-value">000</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel - Game Board -->
+            <div class="center-panel">
+                <div class="game-board">
+                    <canvas id="gameCanvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Right Panel - Next Piece & Controls -->
+            <div class="right-panel">
+                <div class="next-section">
+                    <div class="section-label">NEXT</div>
+                    <div class="next-box">
+                        <canvas id="nextCanvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <div class="section-label">CONTROLS</div>
+                    <div class="control-item">
+                        <span class="key">← →</span>
+                        <span class="action">MOVE</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">↓</span>
+                        <span class="action">SOFT DROP</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">↑</span>
+                        <span class="action">ROTATE</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">C</span>
+                        <span class="action">HOLD</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">P</span>
+                        <span class="action">PAUSE</span>
+                    </div>
+                </div>
+
+                <div class="game-buttons">
+                    <button id="resetBtn" class="game-btn">RESET</button>
+                    <button id="menuBtn" class="game-btn">MENU</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="game-over-screen hidden">
+        <div class="game-over-container">
+            <h2 class="game-over-title">GAME OVER</h2>
+            <div class="final-stats">
+                <div class="final-score">
+                    <span class="stat-label">FINAL SCORE</span>
+                    <span id="finalScore" class="stat-value">000000</span>
+                </div>
+                <div class="final-level">
+                    <span class="stat-label">LEVEL REACHED</span>
+                    <span id="finalLevel" class="stat-value">01</span>
+                </div>
+                <div class="final-lines">
+                    <span class="stat-label">LINES CLEARED</span>
+                    <span id="finalLines" class="stat-value">000</span>
+                </div>
+            </div>
+            <button id="playAgainBtn" class="start-btn">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <!-- Particle Effects Container -->
+    <div id="particleContainer" class="particle-container"></div>
+    <div id="explosionContainer" class="explosion-container"></div>
+
+    <script src="tetris.js"></script>
+</body>
+</html>
