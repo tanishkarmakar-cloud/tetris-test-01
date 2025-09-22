@@ -400,17 +400,36 @@ class TetrisGame {
         const pixelX = x * this.BLOCK_SIZE;
         const pixelY = y * this.BLOCK_SIZE;
         
+        // Enable pixel-perfect rendering
+        this.ctx.imageSmoothingEnabled = false;
+        
+        // Draw main block
         this.ctx.fillStyle = color;
         this.ctx.fillRect(pixelX, pixelY, this.BLOCK_SIZE, this.BLOCK_SIZE);
         
-        // Add border
-        this.ctx.strokeStyle = '#333';
-        this.ctx.lineWidth = 1;
+        // Add pixel art border with highlight and shadow
+        this.ctx.strokeStyle = '#00ff00';
+        this.ctx.lineWidth = 2;
         this.ctx.strokeRect(pixelX, pixelY, this.BLOCK_SIZE, this.BLOCK_SIZE);
+        
+        // Add inner highlight
+        this.ctx.strokeStyle = '#00ffff';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(pixelX + 1, pixelY + 1, this.BLOCK_SIZE - 2, this.BLOCK_SIZE - 2);
+        
+        // Add pixel art shading
+        this.ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+        this.ctx.fillRect(pixelX + 2, pixelY + 2, this.BLOCK_SIZE - 4, 2);
+        
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        this.ctx.fillRect(pixelX + 2, pixelY + this.BLOCK_SIZE - 4, this.BLOCK_SIZE - 4, 2);
     }
     
     drawGrid() {
-        this.ctx.strokeStyle = '#333';
+        // Enable pixel-perfect rendering
+        this.ctx.imageSmoothingEnabled = false;
+        
+        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
         this.ctx.lineWidth = 1;
         
         // Vertical lines
@@ -428,9 +447,17 @@ class TetrisGame {
             this.ctx.lineTo(this.BOARD_WIDTH * this.BLOCK_SIZE, y * this.BLOCK_SIZE);
             this.ctx.stroke();
         }
+        
+        // Add corner highlights for retro effect
+        this.ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(0, 0, this.BOARD_WIDTH * this.BLOCK_SIZE, this.BOARD_HEIGHT * this.BLOCK_SIZE);
     }
     
     drawNextPiece() {
+        // Enable pixel-perfect rendering
+        this.nextCtx.imageSmoothingEnabled = false;
+        
         this.nextCtx.fillStyle = '#000';
         this.nextCtx.fillRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
         
@@ -443,22 +470,29 @@ class TetrisGame {
             for (let y = 0; y < this.nextPiece.shape.length; y++) {
                 for (let x = 0; x < this.nextPiece.shape[y].length; x++) {
                     if (this.nextPiece.shape[y][x]) {
-                        this.nextCtx.fillStyle = this.nextPiece.color;
-                        this.nextCtx.fillRect(
-                            offsetX + x * blockSize,
-                            offsetY + y * blockSize,
-                            blockSize,
-                            blockSize
-                        );
+                        const pixelX = offsetX + x * blockSize;
+                        const pixelY = offsetY + y * blockSize;
                         
+                        // Draw main block
+                        this.nextCtx.fillStyle = this.nextPiece.color;
+                        this.nextCtx.fillRect(pixelX, pixelY, blockSize, blockSize);
+                        
+                        // Add pixel art border
                         this.nextCtx.strokeStyle = '#00ff00';
                         this.nextCtx.lineWidth = 1;
-                        this.nextCtx.strokeRect(
-                            offsetX + x * blockSize,
-                            offsetY + y * blockSize,
-                            blockSize,
-                            blockSize
-                        );
+                        this.nextCtx.strokeRect(pixelX, pixelY, blockSize, blockSize);
+                        
+                        // Add inner highlight
+                        this.nextCtx.strokeStyle = '#00ffff';
+                        this.nextCtx.lineWidth = 0.5;
+                        this.nextCtx.strokeRect(pixelX + 0.5, pixelY + 0.5, blockSize - 1, blockSize - 1);
+                        
+                        // Add pixel art shading
+                        this.nextCtx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+                        this.nextCtx.fillRect(pixelX + 1, pixelY + 1, blockSize - 2, 1);
+                        
+                        this.nextCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                        this.nextCtx.fillRect(pixelX + 1, pixelY + blockSize - 2, blockSize - 2, 1);
                     }
                 }
             }
