@@ -88,7 +88,23 @@ class TetrisGame {
         document.getElementById('pauseBtn').addEventListener('click', () => this.togglePause());
         document.getElementById('resetBtn').addEventListener('click', () => this.resetGame());
         
-        document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+        // Prevent default behavior for arrow keys and space
+        document.addEventListener('keydown', (e) => {
+            // Prevent scrolling for arrow keys and space
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                e.preventDefault();
+            }
+            this.handleKeyPress(e);
+        });
+        
+        // Focus the game area to ensure keyboard input works
+        this.canvas.setAttribute('tabindex', '0');
+        this.canvas.focus();
+        
+        // Refocus on canvas when clicking anywhere
+        document.addEventListener('click', () => {
+            this.canvas.focus();
+        });
     }
     
     handleKeyPress(e) {
@@ -108,7 +124,6 @@ class TetrisGame {
                 this.rotatePiece();
                 break;
             case 'Space':
-                e.preventDefault();
                 this.hardDrop();
                 break;
         }
