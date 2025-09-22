@@ -138,10 +138,18 @@ class TetrisGame {
      */
     resizeCanvas() {
         const gameBoard = document.querySelector('.game-board');
-        if (!gameBoard) return;
+        if (!gameBoard) {
+            console.warn('Game board not found, using fallback sizing');
+            this.BLOCK_SIZE = 20;
+            this.canvas.width = this.BLOCK_SIZE * this.BOARD_WIDTH;
+            this.canvas.height = this.BLOCK_SIZE * this.BOARD_HEIGHT;
+            this.canvas.style.width = this.canvas.width + 'px';
+            this.canvas.style.height = this.canvas.height + 'px';
+            return;
+        }
         
-        const containerWidth = gameBoard.clientWidth - 30;
-        const containerHeight = gameBoard.clientHeight - 30;
+        const containerWidth = gameBoard.clientWidth - 20; // Account for padding
+        const containerHeight = gameBoard.clientHeight - 20; // Account for padding
         
         // Calculate block size based on container
         const maxBlockSize = Math.min(
@@ -149,7 +157,7 @@ class TetrisGame {
             Math.floor(containerHeight / this.BOARD_HEIGHT)
         );
         
-        this.BLOCK_SIZE = Math.max(maxBlockSize, 10);
+        this.BLOCK_SIZE = Math.max(maxBlockSize, 8);
         
         // Set canvas dimensions
         const canvasWidth = this.BLOCK_SIZE * this.BOARD_WIDTH;
@@ -758,6 +766,7 @@ class TetrisGame {
             this.dropTime = currentTime;
         }
         
+        this.draw();
         requestAnimationFrame(() => this.gameLoop());
     }
     
@@ -845,13 +854,16 @@ class TetrisGame {
         this.gameScreen.classList.remove('hidden');
         this.gameOverScreen.classList.add('hidden');
         
-        this.resizeCanvas();
-        this.canvas.focus();
-        
-        this.resetGame();
-        this.generateNextPiece();
-        this.spawnPiece();
-        this.startGame();
+        // Wait for DOM to update, then resize and start
+        setTimeout(() => {
+            this.resizeCanvas();
+            this.canvas.focus();
+            
+            this.resetGame();
+            this.generateNextPiece();
+            this.spawnPiece();
+            this.startGame();
+        }, 100);
     }
     
     // Effects
