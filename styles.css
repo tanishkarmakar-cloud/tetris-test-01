@@ -641,15 +641,16 @@ body {
 /* ===== BOTTOM UI: CONTROLS ===== */
 .bottom-ui {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
     width: 100%;
     max-width: 800px;
-    padding: 1rem 2rem;
+    padding: 1.5rem 2rem;
     background: rgba(255, 255, 255, 0.02);
     border: 2px solid #ffffff;
     border-radius: 15px;
     position: relative;
+    gap: 1.5rem;
 }
 
 .bottom-ui::before {
@@ -673,9 +674,11 @@ body {
 
 .controls-section {
     display: flex;
-    gap: 2rem;
+    gap: 1rem;
     position: relative;
     z-index: 1;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 .control-item {
@@ -686,6 +689,8 @@ body {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid #ffffff;
     border-radius: 8px;
+    min-width: 100px;
+    justify-content: center;
 }
 
 .key {
@@ -715,6 +720,7 @@ body {
     gap: 1rem;
     position: relative;
     z-index: 1;
+    justify-content: center;
 }
 
 /* ===== GAME OVER SCREEN ===== */
@@ -974,11 +980,16 @@ body {
     }
     
     .controls-section {
-        gap: 1rem;
+        gap: 0.8rem;
     }
     
     .score-value {
         font-size: 20px;
+    }
+    
+    .control-item {
+        min-width: 90px;
+        padding: 0.4rem 0.8rem;
     }
 }
 
@@ -996,11 +1007,19 @@ body {
     .controls-section {
         flex-wrap: wrap;
         justify-content: center;
+        gap: 0.6rem;
+    }
+    
+    .control-item {
+        min-width: 80px;
+        padding: 0.3rem 0.6rem;
+        font-size: 11px;
     }
     
     .game-controls {
         flex-wrap: wrap;
         justify-content: center;
+        gap: 0.8rem;
     }
     
     .minimal-btn {
@@ -1016,6 +1035,10 @@ body {
     .game-over-stats {
         flex-direction: column;
         gap: 1rem;
+    }
+    
+    .game-container {
+        gap: 1.5rem;
     }
 }
 
@@ -1054,6 +1077,22 @@ body {
     
     .controls-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .control-item {
+        min-width: 70px;
+        padding: 0.2rem 0.4rem;
+        font-size: 10px;
+    }
+    
+    .key {
+        font-size: 10px;
+        padding: 2px 6px;
+        min-width: 30px;
+    }
+    
+    .action {
+        font-size: 10px;
     }
 }
 
