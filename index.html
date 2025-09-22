@@ -10,13 +10,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Star Wars Opening Crawl -->
+    <div id="openingCrawl" class="opening-crawl">
+        <div class="crawl-container">
+            <div class="crawl-content">
+                <div class="crawl-text">
+                    <h1>EPISODE IV</h1>
+                    <h2>A NEW HOPE</h2>
+                    <p>It is a period of civil war. Rebel spaceships, striking from a hidden base, have won their first victory against the evil Galactic Empire.</p>
+                    <p>During the battle, Rebel spies managed to steal secret plans to the Empire's ultimate weapon, the DEATH STAR, an armored space station with enough power to destroy an entire planet.</p>
+                    <p>Pursued by the Empire's sinister agents, Princess Leia races home aboard her starship, custodian of the stolen plans that can save her people and restore freedom to the galaxy...</p>
+                    <p>But first, she must master the ancient art of TETRIS to defend against the Empire's relentless attacks!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Minimal Terminal Effects -->
     <div class="terminal-overlay">
         <div class="scanlines"></div>
     </div>
     
     <!-- Main Menu Screen -->
-    <div id="mainMenu" class="main-menu">
+    <div id="mainMenu" class="main-menu hidden">
         <div class="menu-container">
             <div class="title-section">
                 <h1 class="title-text">TETRIS</h1>
@@ -66,7 +82,7 @@
 
     <!-- Game Screen -->
     <div id="gameScreen" class="game-screen hidden">
-        <div class="game-container">
+        <div class="game-container" id="gameContainer">
             <div class="game-header">
                 <div class="header-left">
                     <button id="backToMenu" class="minimal-btn secondary">← MENU</button>
@@ -100,6 +116,7 @@
                 <div class="game-area">
                     <div class="game-viewport">
                         <canvas id="gameCanvas"></canvas>
+                        <div id="particleContainer" class="particle-container"></div>
                     </div>
                     <div class="game-sidebar">
                         <div class="next-piece-panel">

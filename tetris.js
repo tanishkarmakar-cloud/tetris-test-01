@@ -24,9 +24,19 @@ class TetrisGame {
         this.mainMenu = document.getElementById('mainMenu');
         this.gameScreen = document.getElementById('gameScreen');
         this.instructionsModal = document.getElementById('instructionsModal');
+        this.openingCrawl = document.getElementById('openingCrawl');
+        this.gameContainer = document.getElementById('gameContainer');
+        this.particleContainer = document.getElementById('particleContainer');
+        
+        // Juice effects
+        this.screenShakeIntensity = 0;
+        this.particles = [];
         
         // Responsive canvas sizing
         this.setupResponsiveCanvas();
+        
+        // Start with opening crawl
+        this.startOpeningCrawl();
         
         // Tetris pieces (Tetrominoes)
         this.pieces = [
@@ -183,6 +193,75 @@ class TetrisGame {
         });
     }
     
+    // Star Wars Opening Crawl
+    startOpeningCrawl() {
+        setTimeout(() => {
+            this.openingCrawl.classList.add('hidden');
+            this.mainMenu.classList.remove('hidden');
+        }, 15000); // 15 seconds for the crawl
+    }
+    
+    // Juice Effects
+    addScreenShake(intensity = 1) {
+        this.gameContainer.classList.remove('shake', 'shake-strong');
+        if (intensity > 1) {
+            this.gameContainer.classList.add('shake-strong');
+        } else {
+            this.gameContainer.classList.add('shake');
+        }
+        
+        setTimeout(() => {
+            this.gameContainer.classList.remove('shake', 'shake-strong');
+        }, intensity > 1 ? 800 : 500);
+    }
+    
+    createParticles(x, y, count = 10) {
+        for (let i = 0; i < count; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            
+            const angle = (Math.PI * 2 * i) / count;
+            const velocity = 50 + Math.random() * 50;
+            const vx = Math.cos(angle) * velocity;
+            const vy = Math.sin(angle) * velocity;
+            
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.setProperty('--vx', vx + 'px');
+            particle.style.setProperty('--vy', vy + 'px');
+            
+            this.particleContainer.appendChild(particle);
+            
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 1000);
+        }
+    }
+    
+    flashScreen() {
+        const gameViewport = document.querySelector('.game-viewport');
+        gameViewport.classList.add('flash');
+        setTimeout(() => {
+            gameViewport.classList.remove('flash');
+        }, 300);
+    }
+    
+    animateScore(element) {
+        element.classList.add('animate');
+        setTimeout(() => {
+            element.classList.remove('animate');
+        }, 500);
+    }
+    
+    pulseElement(element) {
+        element.classList.add('pulse');
+        setTimeout(() => {
+            element.classList.remove('pulse');
+        }, 600);
+    }
+    
     // UI Management Methods
     showMainMenu() {
         this.mainMenu.classList.remove('hidden');
@@ -259,6 +338,11 @@ class TetrisGame {
             this.currentPiece.x += dx;
             this.currentPiece.y += dy;
             this.draw();
+            
+            // Add juice for movement
+            if (dx !== 0) {
+                this.addScreenShake(0.5);
+            }
         } else if (dy > 0) {
             this.placePiece();
         }
@@ -274,6 +358,8 @@ class TetrisGame {
             this.currentPiece.shape = originalShape;
         } else {
             this.draw();
+            // Add juice for rotation
+            this.addScreenShake(0.3);
         }
     }
     
@@ -296,6 +382,9 @@ class TetrisGame {
             this.currentPiece.y++;
         }
         this.placePiece();
+        // Add juice for hard drop
+        this.addScreenShake(1);
+        this.flashScreen();
     }
     
     checkCollision(piece, dx, dy) {
@@ -332,6 +421,14 @@ class TetrisGame {
             }
         }
         
+        // Add juice for piece placement
+        this.addScreenShake(0.7);
+        this.createParticles(
+            this.canvas.offsetLeft + this.canvas.width / 2,
+            this.canvas.offsetTop + this.canvas.height / 2,
+            15
+        );
+        
         this.clearLines();
         this.spawnPiece();
     }
@@ -353,14 +450,33 @@ class TetrisGame {
             this.score += linesCleared * 100 * this.level;
             this.level = Math.floor(this.lines / 10) + 1;
             this.dropInterval = Math.max(50, 1000 - (this.level - 1) * 50);
+            
+            // Add massive juice for line clears
+            this.addScreenShake(linesCleared > 2 ? 2 : 1.5);
+            this.flashScreen();
+            this.createParticles(
+                this.canvas.offsetLeft + this.canvas.width / 2,
+                this.canvas.offsetTop + this.canvas.height / 2,
+                linesCleared * 20
+            );
+            
+            // Animate score elements
+            this.animateScore(document.getElementById('score'));
+            this.animateScore(document.getElementById('lines'));
+            if (this.level > Math.floor((this.lines - linesCleared) / 10) + 1) {
+                this.animateScore(document.getElementById('level'));
+                this.pulseElement(document.querySelector('.game-viewport'));
+            }
+            
             this.updateDisplay();
         }
     }
     
     updateDisplay() {
-        document.getElementById('score').textContent = this.score;
-        document.getElementById('level').textContent = this.level;
-        document.getElementById('lines').textContent = this.lines;
+        // Format numbers with leading zeros for that retro feel
+        document.getElementById('score').textContent = this.score.toString().padStart(7, '0');
+        document.getElementById('level').textContent = this.level.toString().padStart(2, '0');
+        document.getElementById('lines').textContent = this.lines.toString().padStart(3, '0');
     }
     
     draw() {
@@ -583,7 +699,19 @@ class TetrisGame {
     gameOver() {
         this.gameRunning = false;
         clearInterval(this.gameLoop);
-        alert(`Game Over! Final Score: ${this.score}`);
+        
+        // Add massive juice for game over
+        this.addScreenShake(3);
+        this.flashScreen();
+        this.createParticles(
+            this.canvas.offsetLeft + this.canvas.width / 2,
+            this.canvas.offsetTop + this.canvas.height / 2,
+            50
+        );
+        
+        setTimeout(() => {
+            alert(`Game Over! Final Score: ${this.score}`);
+        }, 1000);
     }
 }
 
