@@ -117,6 +117,10 @@ class TetrisGame {
         this.spawnPiece();
         this.updateDisplay();
         this.draw();
+        
+        // Debug: Log next piece info
+        console.log('Next piece generated:', this.nextPiece);
+        console.log('Next canvas size:', this.nextCanvas.width, 'x', this.nextCanvas.height);
     }
     
     /**
@@ -195,11 +199,20 @@ class TetrisGame {
     resizeNextCanvas() {
         const nextContainer = document.querySelector('.next-piece-container');
         if (nextContainer) {
-            const nextSize = Math.min(nextContainer.clientWidth - 4, nextContainer.clientHeight - 4, 30);
-            this.nextCanvas.width = nextSize;
-            this.nextCanvas.height = nextSize;
-            this.nextCanvas.style.width = nextSize + 'px';
-            this.nextCanvas.style.height = nextSize + 'px';
+            const containerWidth = nextContainer.clientWidth;
+            const containerHeight = nextContainer.clientHeight;
+            const nextSize = Math.min(containerWidth - 4, containerHeight - 4, 30);
+            
+            // Ensure minimum size
+            const finalSize = Math.max(nextSize, 20);
+            
+            this.nextCanvas.width = finalSize;
+            this.nextCanvas.height = finalSize;
+            this.nextCanvas.style.width = finalSize + 'px';
+            this.nextCanvas.style.height = finalSize + 'px';
+            
+            // Force redraw
+            this.drawNextPiece();
         }
     }
     
@@ -399,6 +412,8 @@ class TetrisGame {
             x: Math.floor((this.BOARD_WIDTH - this.pieces[randomIndex].shape[0].length) / 2),
             y: 0
         };
+        // Draw the next piece immediately
+        this.drawNextPiece();
     }
     
     /**
@@ -773,36 +788,44 @@ class TetrisGame {
      * Draw next piece
      */
     drawNextPiece() {
+        if (!this.nextCtx || !this.nextCanvas) return;
+        
         this.nextCtx.imageSmoothingEnabled = false;
         this.nextCtx.fillStyle = '#000';
         this.nextCtx.fillRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
         
         if (this.nextPiece) {
             const canvasSize = Math.min(this.nextCanvas.width, this.nextCanvas.height);
-            const blockSize = canvasSize / 6;
+            const blockSize = Math.max(canvasSize / 4, 2); // Ensure minimum block size
             const offsetX = (this.nextCanvas.width - this.nextPiece.shape[0].length * blockSize) / 2;
             const offsetY = (this.nextCanvas.height - this.nextPiece.shape.length * blockSize) / 2;
             
             for (let y = 0; y < this.nextPiece.shape.length; y++) {
                 for (let x = 0; x < this.nextPiece.shape[y].length; x++) {
                     if (this.nextPiece.shape[y][x]) {
-                        const pixelX = offsetX + x * blockSize;
-                        const pixelY = offsetY + y * blockSize;
+                        const pixelX = Math.floor(offsetX + x * blockSize);
+                        const pixelY = Math.floor(offsetY + y * blockSize);
+                        const blockWidth = Math.max(blockSize - 1, 1);
+                        const blockHeight = Math.max(blockSize - 1, 1);
                         
                         const monochromeColor = this.convertToMonochrome(this.nextPiece.color);
                         
+                        // Draw main block
                         this.nextCtx.fillStyle = monochromeColor;
-                        this.nextCtx.fillRect(pixelX, pixelY, blockSize, blockSize);
+                        this.nextCtx.fillRect(pixelX, pixelY, blockWidth, blockHeight);
                         
+                        // Draw border
                         this.nextCtx.strokeStyle = '#ffffff';
                         this.nextCtx.lineWidth = 0.5;
-                        this.nextCtx.strokeRect(pixelX, pixelY, blockSize, blockSize);
+                        this.nextCtx.strokeRect(pixelX, pixelY, blockWidth, blockHeight);
                         
-                        this.nextCtx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                        this.nextCtx.fillRect(pixelX + 0.5, pixelY + 0.5, blockSize - 1, 0.5);
+                        // Draw highlight
+                        this.nextCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        this.nextCtx.fillRect(pixelX + 0.5, pixelY + 0.5, blockWidth - 1, 0.5);
                         
+                        // Draw shadow
                         this.nextCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                        this.nextCtx.fillRect(pixelX + 0.5, pixelY + blockSize - 1, blockSize - 1, 0.5);
+                        this.nextCtx.fillRect(pixelX + 0.5, pixelY + blockHeight - 0.5, blockWidth - 1, 0.5);
                     }
                 }
             }
@@ -920,6 +943,11 @@ class TetrisGame {
         // Reset game state when showing game screen
         this.resetGame();
         this.startGame();
+        
+        // Ensure next piece is drawn
+        setTimeout(() => {
+            this.drawNextPiece();
+        }, 100);
     }
     
     showInstructions() {
