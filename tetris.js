@@ -512,12 +512,43 @@ class TetrisGame {
                 const isStrongBeat = this.beatCount % 4 === 0;
                 
                 if (isStrongBeat) {
-                    // Strong beat - bass drum + high hat
-                    this.createTechnoSound(60, 0.4, 'sine', 0.6, true); // Bass drum
-                    this.createTechnoSound(200, 0.2, 'square', 0.3, true); // High hat
+                    // Strong beat - bass drum + high hat (minimal reverb)
+                    this.createMetronomeSound(60, 0.4, 'sine', 0.6); // Bass drum
+                    this.createMetronomeSound(200, 0.2, 'square', 0.3); // High hat
                 } else {
-                    // Regular beat - just high hat
-                    this.createTechnoSound(150, 0.15, 'square', 0.4, true); // High hat
+                    // Regular beat - just high hat (minimal reverb)
+                    this.createMetronomeSound(150, 0.15, 'square', 0.4); // High hat
+                }
+            };
+            
+            // Create metronome sound with minimal reverb
+            this.createMetronomeSound = (frequency, duration, type = 'sine', volume = 0.1) => {
+                if (!this.audioInitialized || !this.audioContext) {
+                    this.initAudioContext();
+                    if (!this.audioInitialized || !this.audioContext) return;
+                }
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    // Direct connection for clear metronome beat
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    // Set oscillator properties
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = type;
+                    
+                    // Simple envelope for clear beat
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + duration);
+                } catch (error) {
+                    console.warn('Metronome audio error:', error);
                 }
             };
             
@@ -1313,6 +1344,9 @@ class TetrisGame {
         // Generate new pieces
         this.nextPiece = this.getRandomPiece();
         
+        // Spawn the first piece immediately
+        this.spawnPiece();
+        
         // Update displays
         this.updateDisplay();
         this.draw();
@@ -1352,6 +1386,7 @@ class TetrisGame {
      * Show game over screen
      */
     showGameOverScreen() {
+        this.sounds.gameOver();
         this.gameScreen.classList.add('hidden');
         this.gameOverScreen.classList.remove('hidden');
         
@@ -1362,6 +1397,7 @@ class TetrisGame {
     
     // UI Management Methods
     showMainMenu() {
+        this.sounds.button();
         this.mainMenu.classList.remove('hidden');
         this.instructionsScreen.classList.add('hidden');
         this.gameScreen.classList.add('hidden');
@@ -1370,6 +1406,7 @@ class TetrisGame {
     }
     
     showInstructionsScreen() {
+        this.sounds.button();
         this.mainMenu.classList.add('hidden');
         this.instructionsScreen.classList.remove('hidden');
         this.gameScreen.classList.add('hidden');
@@ -1377,6 +1414,7 @@ class TetrisGame {
     }
     
     showGameScreen() {
+        this.sounds.button();
         this.mainMenu.classList.add('hidden');
         this.instructionsScreen.classList.add('hidden');
         this.gameScreen.classList.remove('hidden');
