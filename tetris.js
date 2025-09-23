@@ -545,10 +545,42 @@ class TetrisGame {
                 }
                 
                 convolver.buffer = impulse;
-                reverbGain.gain.value = 0.8; // Much higher reverb level
+                reverbGain.gain.value = 1.5; // Maximum reverb level for atmospheric backing track
                 
                 convolver.connect(reverbGain);
                 reverbGain.connect(this.audioContext.destination);
+                
+                return { convolver, reverbGain };
+            };
+            
+            // Create ethereal reverb for backing track with maximum atmospheric depth
+            this.createEtherealReverb = () => {
+                const convolver = this.audioContext.createConvolver();
+                const reverbGain = this.audioContext.createGain();
+                
+                // Create impulse response for maximum ethereal reverb
+                const length = this.audioContext.sampleRate * 8; // 8 seconds for maximum reverb
+                const impulse = this.audioContext.createBuffer(2, length, this.audioContext.sampleRate);
+                
+                for (let channel = 0; channel < 2; channel++) {
+                    const channelData = impulse.getChannelData(channel);
+                    for (let i = 0; i < length; i++) {
+                        // Complex ethereal reverb pattern for maximum atmospheric depth
+                        const decay = Math.pow(1 - i / length, 0.8);
+                        const noise = (Math.random() * 2 - 1) * 0.8;
+                        const echo = Math.sin(i * 0.005) * 0.6;
+                        const ethereal = Math.sin(i * 0.002) * 0.4;
+                        const cathedral = Math.sin(i * 0.0008) * 0.3;
+                        const space = Math.sin(i * 0.0003) * 0.2;
+                        channelData[i] = (noise + echo + ethereal + cathedral + space) * decay;
+                    }
+                }
+                
+                convolver.buffer = impulse;
+                reverbGain.gain.value = 2.0; // Maximum reverb level for atmospheric backing track
+                
+                convolver.connect(reverbGain);
+                reverbGain.connect(this.masterGain || this.audioContext.destination);
                 
                 return { convolver, reverbGain };
             };
@@ -683,7 +715,7 @@ class TetrisGame {
                 
                 // Master gain node to prevent clipping when sounds layer
                 this.masterGain = this.audioContext.createGain();
-                this.masterGain.gain.setValueAtTime(0.5, this.audioContext.currentTime); // Balanced for clean sound without distortion
+                this.masterGain.gain.setValueAtTime(0.4, this.audioContext.currentTime); // Balanced volume for clean sound
                 
                 // Dynamic range compressor for professional sound - optimized for high volumes
                 this.compressor = this.audioContext.createDynamicsCompressor();
@@ -704,36 +736,16 @@ class TetrisGame {
                 this.analyser.connect(this.audioContext.destination);
                 this.sidechainGain.gain.setValueAtTime(1, this.audioContext.currentTime);
                 
-                // Use adaptive tempo for dynamic BPM
-                const adaptiveBPM = this.classicalSystem ? this.classicalSystem.adaptiveTempo : this.bpm;
-                const beatInterval = 60000 / adaptiveBPM; // Convert BPM to milliseconds
+                // Simple metronome with basic beat
+                const beatInterval = 2000; // 2 seconds between beats
                 this.metronomeInterval = setInterval(() => {
-                    this.playMetronomeBeat();
-                    this.beatCount++;
+                    if (this.audioContext && this.audioContext.state === 'running') {
+                        this.createTechnoSound(220, 0.1, 'sine', 0.1, true);
+                    }
                 }, beatInterval);
                 
-                // Start arpeggiator
-                this.startArpeggiator();
-                
-                // Start binaural beats
-                this.startBinauralBeats();
-                
-                // Start ambient pads
-                this.startAmbientPads();
-                
-                // Initialize spatial audio
-                this.initSpatialAudio();
-                
-                // Start Reich-inspired systems
-                this.startPhasingSystem();
-                this.startOstinatoSystem();
-                this.startCanonSystem();
-                
-                // Start classical music system
-                this.startClassicalSystem();
-                
-                // Start Brian Eno-inspired ambient system
-                this.startEnoAmbientSystem();
+                // Start subtle background ambient pad
+                this.startBackgroundAmbient();
             };
             
             this.stopMetronome = () => {
@@ -741,132 +753,82 @@ class TetrisGame {
                     clearInterval(this.metronomeInterval);
                     this.metronomeInterval = null;
                 }
-                this.stopArpeggiator();
-                this.stopBinauralBeats();
-                this.stopAmbientPads();
-                this.stopPhasingSystem();
-                this.stopOstinatoSystem();
-                this.stopCanonSystem();
-                this.stopClassicalSystem();
-                this.stopEnoAmbientSystem();
+                this.stopBackgroundAmbient();
+            };
+            
+            // Simple background ambient system
+            this.backgroundAmbient = {
+                oscillators: [],
+                interval: null
+            };
+            
+            this.startBackgroundAmbient = () => {
+                if (this.backgroundAmbient.interval) return;
+                
+                // Create subtle ambient pad
+                const frequencies = [110, 146.83, 174.61, 220]; // A minor chord
+                
+                frequencies.forEach((freq, index) => {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const reverb = this.createEtherealReverb();
+                    
+                    // Set up oscillator
+                    oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Filter for warmth
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(freq * 3, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                    
+                    // Connect through reverb
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    
+                    // Very quiet volume
+                    const volume = 0.01 * (1 - index * 0.2); // Decreasing volume for each layer
+                    gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                    
+                    // Start oscillator
+                    oscillator.start(this.audioContext.currentTime);
+                    
+                    this.backgroundAmbient.oscillators.push({ oscillator, gainNode, filter });
+                });
+                
+                // Slowly modulate the ambient pad
+                this.backgroundAmbient.interval = setInterval(() => {
+                    this.backgroundAmbient.oscillators.forEach(({ oscillator }, index) => {
+                        const modulation = Math.sin(Date.now() * 0.001 + index) * 5;
+                        oscillator.frequency.setValueAtTime(oscillator.frequency.value + modulation, this.audioContext.currentTime);
+                    });
+                }, 100);
+            };
+            
+            this.stopBackgroundAmbient = () => {
+                if (this.backgroundAmbient.interval) {
+                    clearInterval(this.backgroundAmbient.interval);
+                    this.backgroundAmbient.interval = null;
+                }
+                
+                this.backgroundAmbient.oscillators.forEach(({ oscillator, gainNode, filter }) => {
+                    try {
+                        oscillator.stop();
+                        oscillator.disconnect();
+                        gainNode.disconnect();
+                        filter.disconnect();
+                    } catch (e) {
+                        // Ignore cleanup errors
+                    }
+                });
+                this.backgroundAmbient.oscillators = [];
             };
             
             // Philip Glass-inspired arpeggiated patterns with additive processes
-            this.startArpeggiator = () => {
-                if (this.arpeggiator.interval) return;
-                
-                // Multiple overlapping arpeggio patterns (Glass signature)
-                this.arpeggiator.patterns = [
-                    [0, 2, 4, 2, 0, 1, 3, 1], // C major arpeggio
-                    [1, 3, 5, 3, 1, 2, 4, 2], // D minor arpeggio (offset)
-                    [2, 4, 6, 4, 2, 3, 5, 3], // E minor arpeggio (offset)
-                    [0, 1, 2, 3, 4, 5, 6, 7]  // Chromatic ascent
-                ];
-                this.arpeggiator.currentPattern = 0;
-                this.arpeggiator.step = 0;
-                this.arpeggiator.layer = 0;
-                
-                // Multiple layers with different timings (additive process)
-                const arpInterval = 60000 / (this.bpm * 3); // Faster for Glass feel
-                this.arpeggiator.interval = setInterval(() => {
-                    this.playGlassArpeggio();
-                }, arpInterval);
-                
-                // Second layer with slight offset
-                setTimeout(() => {
-                    this.arpeggiator.layerInterval = setInterval(() => {
-                        this.playGlassArpeggioLayer();
-                    }, arpInterval);
-                }, arpInterval / 2);
-            };
             
-            this.stopArpeggiator = () => {
-                if (this.arpeggiator.interval) {
-                    clearInterval(this.arpeggiator.interval);
-                    this.arpeggiator.interval = null;
-                }
-                if (this.arpeggiator.layerInterval) {
-                    clearInterval(this.arpeggiator.layerInterval);
-                    this.arpeggiator.layerInterval = null;
-                }
-            };
             
-            // Philip Glass arpeggio patterns
-            this.playGlassArpeggio = () => {
-                if (!this.audioInitialized || !this.audioContext) return;
-                
-                const pattern = this.arpeggiator.patterns[this.arpeggiator.currentPattern];
-                const noteIndex = pattern[this.arpeggiator.step];
-                const baseFreq = 220; // A3
-                const freq = baseFreq * Math.pow(2, noteIndex / 12);
-                
-                // Glass-style additive synthesis
-                this.createGlassArpeggio(freq, 0.3, 0.1);
-                
-                this.arpeggiator.step = (this.arpeggiator.step + 1) % pattern.length;
-                
-                // Switch patterns occasionally (additive process)
-                if (this.arpeggiator.step === 0) {
-                    this.arpeggiator.currentPattern = (this.arpeggiator.currentPattern + 1) % this.arpeggiator.patterns.length;
-                }
-            };
-            
-            this.playGlassArpeggioLayer = () => {
-                if (!this.audioInitialized || !this.audioContext) return;
-                
-                const pattern = this.arpeggiator.patterns[(this.arpeggiator.currentPattern + 1) % this.arpeggiator.patterns.length];
-                const noteIndex = pattern[this.arpeggiator.step];
-                const baseFreq = 330; // E4 (higher register)
-                const freq = baseFreq * Math.pow(2, noteIndex / 12);
-                
-                // Second layer with different timbre
-                this.createGlassArpeggio(freq, 0.2, 0.05);
-            };
-            
-            // Glass-style additive synthesis
-            this.createGlassArpeggio = (frequency, duration, volume) => {
-                if (!this.audioInitialized || !this.audioContext) return;
-                
-                const oscillator = this.audioContext.createOscillator();
-                const gainNode = this.audioContext.createGain();
-                const filter = this.audioContext.createBiquadFilter();
-                
-                // Multiple harmonics (additive synthesis)
-                const harmonics = [1, 2, 3, 4, 5]; // Fundamental + overtones
-                
-                harmonics.forEach((harmonic, index) => {
-                    const osc = this.audioContext.createOscillator();
-                    const gain = this.audioContext.createGain();
-                    
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(frequency * harmonic, this.audioContext.currentTime);
-                    
-                    // Harmonic amplitude decreases with frequency
-                    const harmonicVolume = volume / (harmonic * 0.5);
-                    gain.gain.setValueAtTime(harmonicVolume, this.audioContext.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
-                    
-                    osc.connect(gain);
-                    gain.connect(this.masterGain);
-                    
-                    osc.start(this.audioContext.currentTime);
-                    osc.stop(this.audioContext.currentTime + duration);
-                });
-                
-                // Glass-style reverb
-                const reverb = this.createEtherealReverb();
-                gainNode.connect(reverb);
-                reverb.connect(this.masterGain);
-            };
-            
-            this.playArpeggiatorNote = () => {
-                const scale = [220, 246.94, 277.18, 311.13, 349.23, 392.00, 440.00, 493.88]; // C major scale
-                const noteIndex = this.arpeggiator.pattern[this.arpeggiator.index % this.arpeggiator.pattern.length];
-                const frequency = scale[noteIndex];
-                
-                this.createArpeggiatorSound(frequency, 0.1, 'triangle', 0.05);
-                this.arpeggiator.index++;
-            };
             
             // Sidechain compression effect
             this.triggerSidechain = () => {
@@ -961,16 +923,6 @@ class TetrisGame {
                 }
             };
             
-            // Create enhanced minimalist pulse with synth layers (Glass/Reich/Eno style)
-            this.createMinimalistPulse = (frequency, volume) => {
-                if (!this.audioInitialized || !this.audioContext) return;
-                
-                // Create multiple synth layers for rich backing track
-                this.createPrimarySynthLayer(frequency, volume);
-                this.createHarmonicSynthLayer(frequency, volume * 0.7);
-                this.createAmbientSynthLayer(frequency, volume * 0.5);
-                this.createPercussiveSynthLayer(frequency, volume * 0.3);
-            };
             
             // Primary synth layer - main tone
             this.createPrimarySynthLayer = (frequency, volume) => {
@@ -1758,8 +1710,8 @@ class TetrisGame {
                 
                 // Eno-style envelope - very slow attack and decay
                 gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0.01, this.audioContext.currentTime + 2);
-                gainNode.gain.linearRampToValueAtTime(0.005, this.audioContext.currentTime + duration * 0.7);
+                gainNode.gain.linearRampToValueAtTime(0.003, this.audioContext.currentTime + 2);
+                gainNode.gain.linearRampToValueAtTime(0.002, this.audioContext.currentTime + duration * 0.7);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
                 
                 // Start oscillators
@@ -1846,8 +1798,8 @@ class TetrisGame {
                 
                 // Wind envelope
                 gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0.005, this.audioContext.currentTime + 1);
-                gainNode.gain.linearRampToValueAtTime(0.002, this.audioContext.currentTime + 4);
+                gainNode.gain.linearRampToValueAtTime(0.002, this.audioContext.currentTime + 1);
+                gainNode.gain.linearRampToValueAtTime(0.001, this.audioContext.currentTime + 4);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 6);
                 
                 // Start sources
@@ -1930,7 +1882,7 @@ class TetrisGame {
                     
                     // Drone envelope - very slow attack
                     gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(0.008, this.audioContext.currentTime + 3);
+                    gainNode.gain.linearRampToValueAtTime(0.003, this.audioContext.currentTime + 3);
                     
                     // Start oscillators
                     oscillator.start(this.audioContext.currentTime);
@@ -1981,8 +1933,8 @@ class TetrisGame {
                 
                 // Melodic note envelope
                 gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0.015, this.audioContext.currentTime + 0.1);
-                gainNode.gain.linearRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+                gainNode.gain.linearRampToValueAtTime(0.005, this.audioContext.currentTime + 0.1);
+                gainNode.gain.linearRampToValueAtTime(0.003, this.audioContext.currentTime + 0.5);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
                 
                 oscillator.start(this.audioContext.currentTime);
@@ -3646,19 +3598,33 @@ class TetrisGame {
                     // Apply adaptive frequency response based on current spectrum
                     this.applyAdaptiveEQ(filter, frequency);
                     
-                    // Natural envelope with extended fade for layering
+                    // Extended duration for gradual fade-out
+                    const soundDuration = Math.max(duration * 2, 0.6);
+                    
+                    // Smooth envelope with fade-in and gradual fade-out
                     const now = this.audioContext.currentTime;
-                    const extendedDuration = duration * 2; // Allow sounds to layer longer
-                    
                     gainNode.gain.setValueAtTime(0, now);
-                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.05);
-                    gainNode.gain.linearRampToValueAtTime(volume * 0.4, now + duration * 0.6);
-                    gainNode.gain.linearRampToValueAtTime(volume * 0.1, now + duration);
-                    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + extendedDuration);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.05); // Fade-in
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.9, now + soundDuration * 0.1);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + soundDuration * 0.3);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.5, now + soundDuration * 0.5);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.3, now + soundDuration * 0.7);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.1, now + soundDuration * 0.9);
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + soundDuration);
                     
-                    // Start oscillator and let it fade naturally
                     oscillator.start(now);
-                    oscillator.stop(now + extendedDuration);
+                    oscillator.stop(now + soundDuration);
+                    
+                    // Clean up after sound ends
+                    setTimeout(() => {
+                        try {
+                            oscillator.disconnect();
+                            filter.disconnect();
+                            gainNode.disconnect();
+                        } catch (e) {
+                            // Ignore cleanup errors
+                        }
+                    }, soundDuration * 1000 + 200);
                 } catch (error) {
                     console.warn('Harmonious note error:', error);
                 }
@@ -3854,41 +3820,69 @@ class TetrisGame {
                 }
             };
             
-            // Create techno sound with heavy reverb and layering
-            this.createTechnoSound = (frequency, duration, type = 'sine', volume = 0.1, isMetronome = false) => {
-                if (!this.audioInitialized || !this.audioContext) {
+            // Create organ-esque sound with reverb and proper fade-in/fade-out
+            this.createTechnoSound = (frequency, duration, type = 'sine', volume = 0.1, isMetronome = false, isPlayerInteraction = false) => {
+                if (!this.audioInitialized || !this.audioContext || this.audioContext.state !== 'running') {
                     this.initAudioContext();
-                    if (!this.audioInitialized || !this.audioContext) return;
+                    if (!this.audioInitialized || !this.audioContext || this.audioContext.state !== 'running') return;
                 }
                 
                 try {
                     const oscillator = this.audioContext.createOscillator();
                     const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
                     const reverb = this.createReverb();
                     
-                    // Connect with heavy reverb
-            oscillator.connect(gainNode);
-                    gainNode.connect(reverb.convolver);
-            
-                    // Set oscillator properties
+                    // Set up oscillator with organ-like character
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-            oscillator.type = type;
+                    oscillator.type = type;
             
-                    // Add some detuning for more character
+                    // Add detuning for organ warmth
                     if (!isMetronome) {
-                        oscillator.detune.setValueAtTime(Math.random() * 20 - 10, this.audioContext.currentTime);
+                        oscillator.detune.setValueAtTime(Math.random() * 15 - 7.5, this.audioContext.currentTime);
                     }
                     
-                    // Longer duration for layering effect
-                    const extendedDuration = duration * 3;
+                    // Filter for organ warmth
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 2.5, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(1.5, this.audioContext.currentTime);
                     
-                    // Envelope with stretched falloff for layering
-                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
-                    gainNode.gain.exponentialRampToValueAtTime(0.0001, this.audioContext.currentTime + extendedDuration);
+                    // Connect through reverb for organ-esque sound
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
                     
-                    oscillator.start(this.audioContext.currentTime);
-                    oscillator.stop(this.audioContext.currentTime + extendedDuration);
+                    // Extended duration for gradual fade-out
+                    const soundDuration = Math.max(duration * 2, 0.8);
+                    
+                    // Fade-in and fade-out timing based on interaction type
+                    const attackTime = isPlayerInteraction ? 0.02 : 0.05; // Quicker for player interaction
+                    const releaseStart = isPlayerInteraction ? 0.7 : 0.8; // Earlier release for player interaction
+                    
+                    // Smooth envelope with fade-in and gradual fade-out
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + attackTime); // Fade-in
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.9, now + soundDuration * 0.1);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + soundDuration * 0.3);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.5, now + soundDuration * 0.5);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.3, now + soundDuration * releaseStart);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.1, now + soundDuration * 0.9);
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + soundDuration);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + soundDuration);
+                    
+                    // Clean up after sound ends
+                    setTimeout(() => {
+                        try {
+                            oscillator.disconnect();
+                            filter.disconnect();
+                            gainNode.disconnect();
+                        } catch (e) {
+                            // Ignore cleanup errors
+                        }
+                    }, soundDuration * 1000 + 200);
                 } catch (error) {
                     console.warn('Audio playback error:', error);
                 }
@@ -3908,7 +3902,7 @@ class TetrisGame {
                     this.createTechnoSound(440, 0.5, 'sine', 0.3);
                 },
                 move: () => {
-                    // Enhanced move sound with layered clarity
+                    // Simple move sound
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[1]; // Use middle voice of current chord
                     
@@ -3918,13 +3912,11 @@ class TetrisGame {
                     // Balanced volume for clean sound
                     const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume;
                     
-                    // Enhanced layered sound effect
-                    this.createEnhancedSoundEffect(freq, 0.4, adaptiveVolume, 'move');
-                    
-                    this.triggerSidechain();
+                    // Player interaction sound with quick fade-in/fade-out
+                    this.createTechnoSound(freq, 0.2, 'triangle', adaptiveVolume, false, true);
                 },
                 rotate: () => {
-                    // Enhanced rotate sound with layered clarity
+                    // Simple rotate sound
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[2]; // Use top voice of current chord
                     
@@ -3934,13 +3926,11 @@ class TetrisGame {
                     // Balanced volume with moderate tension boost
                     const adaptiveVolume = 0.8 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.2);
                     
-                    // Enhanced layered sound effect
-                    this.createEnhancedSoundEffect(freq, 0.5, adaptiveVolume, 'rotate');
-                    
-                    this.triggerSidechain();
+                    // Player interaction sound with quick fade-in/fade-out
+                    this.createTechnoSound(freq, 0.3, 'triangle', adaptiveVolume, false, true);
                 },
                 drop: () => {
-                    // Enhanced drop sound with layered clarity
+                    // Simple drop sound
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[0]; // Bass note
                     
@@ -3950,10 +3940,8 @@ class TetrisGame {
                     // Balanced volume with moderate energy boost
                     const adaptiveVolume = 1.0 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.3);
                     
-                    // Enhanced layered sound effect
-                    this.createEnhancedSoundEffect(freq, 0.6, adaptiveVolume, 'drop');
-                    
-                    this.triggerSidechain();
+                    // Player interaction sound with quick fade-in/fade-out
+                    this.createTechnoSound(freq, 0.4, 'triangle', adaptiveVolume, false, true);
                 },
             lineClear: () => {
                     // Multi-layered celebration for line clear
@@ -3998,17 +3986,17 @@ class TetrisGame {
                     this.triggerSidechain();
             },
             gameOver: () => {
-                    // Descending layered sound
-                    this.createTechnoSound(400, 0.5, 'sawtooth', 0.25);
-                    setTimeout(() => this.createTechnoSound(300, 0.5, 'sawtooth', 0.25), 100);
-                    setTimeout(() => this.createTechnoSound(200, 0.5, 'sawtooth', 0.25), 200);
-                    setTimeout(() => this.createTechnoSound(100, 0.5, 'sawtooth', 0.25), 300);
+                    // Descending layered sound with proper fade-out
+                    this.createTechnoSound(400, 1.0, 'sawtooth', 0.25);
+                    setTimeout(() => this.createTechnoSound(300, 1.0, 'sawtooth', 0.25), 100);
+                    setTimeout(() => this.createTechnoSound(200, 1.0, 'sawtooth', 0.25), 200);
+                    setTimeout(() => this.createTechnoSound(100, 1.0, 'sawtooth', 0.25), 300);
                 },
                 button: () => {
-                    this.createTechnoSound(800, 0.15, 'square', 0.12);
+                    this.createTechnoSound(800, 0.4, 'square', 0.12, false, true);
                 },
             levelUp: () => {
-                    this.createTechnoSound(600, 0.4, 'triangle', 0.25);
+                    this.createTechnoSound(600, 0.8, 'triangle', 0.25);
                 },
                 tetris: () => {
                     // Progressive Tetris - ascending scale for triumph
@@ -4056,6 +4044,53 @@ class TetrisGame {
     }
     
     /**
+     * Handle keyboard input
+     */
+    handleKeyPress(e) {
+        // Initialize audio on first user interaction
+        this.initAudioContext();
+        
+        if (e.code === 'KeyP') {
+            this.sounds.button();
+            this.togglePause();
+            return;
+        }
+        
+        if (!this.gameRunning || this.gamePaused || !this.currentPiece) return;
+        
+        const currentTime = Date.now();
+        if (currentTime - this.lastMoveTime < this.moveDelay) return;
+        this.lastMoveTime = currentTime;
+        
+        switch(e.code) {
+            case 'ArrowLeft':
+                this.sounds.move();
+                this.movePiece(-1, 0);
+                break;
+            case 'ArrowRight':
+                this.sounds.move();
+                this.movePiece(1, 0);
+                break;
+            case 'ArrowDown':
+                this.sounds.drop();
+                this.movePiece(0, 1);
+                break;
+            case 'ArrowUp':
+                this.sounds.rotate();
+                this.rotatePiece();
+                break;
+            case 'Space':
+                this.sounds.drop();
+                this.hardDrop();
+                break;
+            case 'KeyC':
+                this.sounds.button();
+                this.holdCurrentPiece();
+                break;
+        }
+    }
+    
+    /**
      * Generate next piece
      */
     generateNextPiece() {
@@ -4066,6 +4101,20 @@ class TetrisGame {
             y: 0
         };
         this.drawNextPiece();
+    }
+    
+    /**
+     * Spawn current piece
+     */
+    spawnPiece() {
+        this.currentPiece = this.nextPiece;
+        this.generateNextPiece();
+        this.canHold = true;
+        
+        if (this.checkCollision(this.currentPiece, 0, 0)) {
+            this.gameOver();
+        }
+        this.draw();
     }
     
     /**
@@ -4162,11 +4211,11 @@ class TetrisGame {
             }
             
             if (!canRotate) {
-                this.currentPiece.shape = originalShape;
+            this.currentPiece.shape = originalShape;
             }
         }
         
-        this.draw();
+            this.draw();
         this.addScreenShake(0.1);
     }
     
@@ -4294,7 +4343,6 @@ class TetrisGame {
         // Update displays
         this.drawNextPiece();
         this.updateDisplay();
-        this.draw();
     }
     
     /**
@@ -4650,6 +4698,9 @@ class TetrisGame {
         this.dropTime = Date.now();
         this.sounds.startMetronome();
         
+        // Spawn the first piece
+        this.spawnPiece();
+        
         this.gameLoop();
     }
     
@@ -4666,21 +4717,11 @@ class TetrisGame {
     }
     
     /**
-     * Resume game
-     */
-    resumeGame() {
-        this.gamePaused = false;
-        this.dropTime = Date.now();
-        this.sounds.startMetronome();
-        this.gameLoop();
-    }
-    
-    /**
      * Toggle pause
      */
     togglePause() {
         if (this.gamePaused) {
-            this.resumeGame();
+            this.startGame();
         } else {
             this.pauseGame();
         }
@@ -4717,8 +4758,14 @@ class TetrisGame {
         // Generate new pieces
         this.nextPiece = this.getRandomPiece();
         
-        // Spawn the first piece
+        // Spawn the first piece immediately
         this.spawnPiece();
+        
+        // Start the game so pieces fall
+        this.gameRunning = true;
+        this.gamePaused = false;
+        this.sounds.startMetronome();
+        this.gameLoop();
         
         // Update displays
         this.updateDisplay();
@@ -4799,6 +4846,8 @@ class TetrisGame {
             this.canvas.focus();
             
             this.resetGame();
+            this.generateNextPiece();
+            this.spawnPiece();
             this.startGame();
         }, 100);
     }
