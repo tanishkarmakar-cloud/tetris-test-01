@@ -315,6 +315,7 @@ class TetrisGame {
         
         // Keyboard events
         document.addEventListener('keydown', (e) => {
+            console.log('Key pressed:', e.code, 'Game running:', this.gameRunning, 'Game paused:', this.gamePaused);
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyC', 'KeyP'].includes(e.code)) {
                 e.preventDefault();
             }
@@ -393,43 +394,65 @@ class TetrisGame {
      * Handle keyboard input
      */
     handleKeyPress(e) {
+        console.log('handleKeyPress called with:', e.code);
         // Initialize audio on first user interaction
         this.initAudioContext();
         
-        if (!this.gameRunning || this.gamePaused || !this.currentPiece) return;
+        console.log('Game state check:', {
+            gameRunning: this.gameRunning,
+            gamePaused: this.gamePaused,
+            currentPiece: !!this.currentPiece
+        });
+        
+        if (!this.gameRunning || this.gamePaused || !this.currentPiece) {
+            console.log('Early return due to game state');
+            return;
+        }
         
         const currentTime = Date.now();
-        if (currentTime - this.lastMoveTime < this.moveDelay) return;
+        if (currentTime - this.lastMoveTime < this.moveDelay) {
+            console.log('Early return due to move delay');
+            return;
+        }
         this.lastMoveTime = currentTime;
         
         switch(e.code) {
             case 'ArrowLeft':
+                console.log('Moving left');
                 this.sounds.move();
                 this.movePiece(-1, 0);
                 break;
             case 'ArrowRight':
+                console.log('Moving right');
                 this.sounds.move();
                 this.movePiece(1, 0);
                 break;
             case 'ArrowDown':
+                console.log('Moving down');
                 this.sounds.drop();
                 this.movePiece(0, 1);
                 break;
             case 'ArrowUp':
+                console.log('Rotating');
                 this.sounds.rotate();
                 this.rotatePiece();
                 break;
             case 'Space':
+                console.log('Hard drop');
                 this.sounds.drop();
                 this.hardDrop();
                 break;
             case 'KeyC':
+                console.log('Hold piece');
                 this.sounds.button();
                 this.holdCurrentPiece();
                 break;
             case 'KeyP':
+                console.log('Toggle pause');
                 this.togglePause();
                 break;
+            default:
+                console.log('Unhandled key:', e.code);
         }
     }
     
