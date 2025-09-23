@@ -519,6 +519,25 @@ body {
     text-shadow: 0 0 10px #ff0000;
 }
 
+.test-audio-btn {
+    position: absolute;
+    right: 0;
+    top: 30px;
+    background: rgba(0, 255, 255, 0.2);
+    border: 1px solid #00ffff;
+    color: #00ffff;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 4px;
+}
+
+.test-audio-btn:hover {
+    background: rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 10px #00ffff;
+}
+
 .game-container {
     display: flex;
     gap: 1.5rem;

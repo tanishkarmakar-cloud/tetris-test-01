@@ -309,6 +309,12 @@ class TetrisGame {
         document.getElementById('mobileHold').addEventListener('click', () => this.handleMobileInput('hold'));
         document.getElementById('mobileDrop').addEventListener('click', () => this.handleMobileInput('drop'));
         
+        // Test audio button
+        document.getElementById('testAudioBtn').addEventListener('click', () => {
+            this.initAudioContext();
+            this.sounds.test();
+        });
+        
         // Keyboard events
         document.addEventListener('keydown', (e) => {
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyC', 'KeyP'].includes(e.code)) {
@@ -437,15 +443,22 @@ class TetrisGame {
             
             // Initialize audio context on first user interaction
             this.initAudioContext = () => {
-                if (this.audioInitialized && this.audioContext) return;
+                console.log('initAudioContext called');
+                if (this.audioInitialized && this.audioContext) {
+                    console.log('Audio already initialized');
+                    return;
+                }
                 
                 try {
+                    console.log('Creating audio context...');
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log('Audio context created, state:', this.audioContext.state);
                     
                     // Resume audio context if suspended
                     if (this.audioContext.state === 'suspended') {
+                        console.log('Resuming suspended audio context...');
                         this.audioContext.resume().then(() => {
-                            console.log('Audio context resumed');
+                            console.log('Audio context resumed, state:', this.audioContext.state);
                             this.updateAudioStatus();
                         });
                     } else {
@@ -453,9 +466,9 @@ class TetrisGame {
                     }
                     
                     this.audioInitialized = true;
-                    console.log('Audio context initialized');
+                    console.log('Audio context initialized successfully');
                 } catch (error) {
-                    console.warn('Failed to initialize audio context:', error);
+                    console.error('Failed to initialize audio context:', error);
                 }
             };
             
@@ -519,45 +532,29 @@ class TetrisGame {
             this.createEtherealTone = (frequency, duration, type = 'sine', volume = 0.1, isMetronome = false) => {
                 if (!this.audioInitialized || !this.audioContext) {
                     this.initAudioContext();
-                    if (!this.audioInitialized || !this.audioContext) return;
+                    if (!this.audioInitialized || !this.audioContext) {
+                        console.log('Audio context not available, skipping sound');
+                        return;
+                    }
                 }
+                
+                console.log(`Playing sound: ${frequency}Hz, ${type}, ${volume} volume`);
                 
                 const oscillator = this.audioContext.createOscillator();
                 const gainNode = this.audioContext.createGain();
-                const filter = this.audioContext.createBiquadFilter();
-                const reverb = this.createReverb();
                 
-                // Set up filter for ethereal sound
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(2000, this.audioContext.currentTime);
-                filter.Q.setValueAtTime(1, this.audioContext.currentTime);
-                
-                // Connect audio chain
-                oscillator.connect(filter);
-                filter.connect(gainNode);
-                gainNode.connect(reverb.convolver);
+                // Simplified audio chain - direct connection first
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
                 
                 // Set oscillator properties
                 oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
                 oscillator.type = type;
                 
-                // Add slight detuning for ethereal effect
-                if (!isMetronome) {
-                    oscillator.detune.setValueAtTime(Math.random() * 10 - 5, this.audioContext.currentTime);
-                }
-                
-                // Envelope
+                // Simple envelope
                 gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
                 gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
-                
-                // Add subtle frequency modulation for otherworldly feel
-                if (!isMetronome) {
-                    oscillator.frequency.exponentialRampToValueAtTime(
-                        frequency * (1 + Math.sin(this.audioContext.currentTime * 0.5) * 0.1),
-                        this.audioContext.currentTime + duration * 0.5
-                    );
-                }
                 
                 oscillator.start(this.audioContext.currentTime);
                 oscillator.stop(this.audioContext.currentTime + duration);
@@ -581,6 +578,10 @@ class TetrisGame {
             };
             
             return {
+                test: () => {
+                    console.log('Testing audio...');
+                    this.createEtherealTone(440, 0.5, 'sine', 0.3);
+                },
                 move: () => {
                     const note = this.getNextNote();
                     this.createEtherealTone(note, 0.15, 'sine', 0.12);
