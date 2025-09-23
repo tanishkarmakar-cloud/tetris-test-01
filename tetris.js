@@ -449,30 +449,33 @@ class TetrisGame {
                     }
                     
                     this.audioInitialized = true;
-                    this.updateAudioStatus();
                 } catch (error) {
                     console.warn('Failed to initialize audio context:', error);
                 }
             };
             
-            // Create reverb effect
+            // Create heavy reverb effect
             this.createReverb = () => {
                 const convolver = this.audioContext.createConvolver();
                 const reverbGain = this.audioContext.createGain();
                 
-                // Create impulse response for reverb
-                const length = this.audioContext.sampleRate * 2;
+                // Create impulse response for heavy reverb
+                const length = this.audioContext.sampleRate * 4; // 4 seconds for heavy reverb
                 const impulse = this.audioContext.createBuffer(2, length, this.audioContext.sampleRate);
                 
                 for (let channel = 0; channel < 2; channel++) {
                     const channelData = impulse.getChannelData(channel);
                     for (let i = 0; i < length; i++) {
-                        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+                        // More complex reverb pattern for heavier effect
+                        const decay = Math.pow(1 - i / length, 1.5);
+                        const noise = (Math.random() * 2 - 1) * 0.8;
+                        const echo = Math.sin(i * 0.01) * 0.3;
+                        channelData[i] = (noise + echo) * decay;
                     }
                 }
                 
                 convolver.buffer = impulse;
-                reverbGain.gain.value = 0.3;
+                reverbGain.gain.value = 0.8; // Much higher reverb level
                 
                 convolver.connect(reverbGain);
                 reverbGain.connect(this.audioContext.destination);
@@ -504,14 +507,14 @@ class TetrisGame {
             
             this.playMetronomeBeat = () => {
                 const isStrongBeat = this.beatCount % 4 === 0;
-                const frequency = isStrongBeat ? 80 : 60;
-                const volume = isStrongBeat ? 0.15 : 0.08;
+                const frequency = isStrongBeat ? 100 : 80;
+                const volume = isStrongBeat ? 0.3 : 0.2; // Much louder metronome
                 
-                this.createTechnoSound(frequency, 0.1, 'sine', volume, true);
+                this.createTechnoSound(frequency, 0.2, 'sine', volume, true);
                 this.updateMetronomeVisual(this.beatCount % 4);
             };
             
-            // Create techno sound with reverb
+            // Create techno sound with heavy reverb
             this.createTechnoSound = (frequency, duration, type = 'sine', volume = 0.1, isMetronome = false) => {
                 if (!this.audioInitialized || !this.audioContext) {
                     this.initAudioContext();
@@ -521,16 +524,22 @@ class TetrisGame {
                 try {
                     const oscillator = this.audioContext.createOscillator();
                     const gainNode = this.audioContext.createGain();
+                    const reverb = this.createReverb();
                     
-                    // Simple connection without reverb for now
+                    // Connect with heavy reverb
                     oscillator.connect(gainNode);
-                    gainNode.connect(this.audioContext.destination);
+                    gainNode.connect(reverb.convolver);
                     
                     // Set oscillator properties
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
                     oscillator.type = type;
                     
-                    // Simple envelope
+                    // Add some detuning for more character
+                    if (!isMetronome) {
+                        oscillator.detune.setValueAtTime(Math.random() * 20 - 10, this.audioContext.currentTime);
+                    }
+                    
+                    // Envelope with longer decay for reverb
                     gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
                     gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
@@ -1278,7 +1287,11 @@ class TetrisGame {
             cancelAnimationFrame(this.gameLoopId);
             this.gameLoopId = null;
         }
+        
+        // Clear the board
         this.board = Array(this.BOARD_HEIGHT).fill().map(() => Array(this.BOARD_WIDTH).fill(0));
+        
+        // Reset all game state
         this.currentPiece = null;
         this.nextPiece = null;
         this.holdPiece = null;
@@ -1287,6 +1300,13 @@ class TetrisGame {
         this.level = 1;
         this.lines = 0;
         this.dropInterval = 1000;
+        this.dropTime = Date.now();
+        this.lastMoveTime = 0;
+        
+        // Generate new pieces
+        this.nextPiece = this.getRandomPiece();
+        
+        // Update displays
         this.updateDisplay();
         this.draw();
         this.drawNextPiece();
@@ -1460,18 +1480,6 @@ class TetrisGame {
         });
     }
     
-    updateAudioStatus() {
-        const audioStatus = document.getElementById('audioStatus');
-        if (!audioStatus) return;
-        
-        if (this.audioInitialized && this.audioContext && this.audioContext.state === 'running') {
-            audioStatus.textContent = '🔊';
-            audioStatus.className = 'audio-status ready';
-        } else {
-            audioStatus.textContent = '🔇';
-            audioStatus.className = 'audio-status muted';
-        }
-    }
     
     // High score management
     loadHighScore() {
