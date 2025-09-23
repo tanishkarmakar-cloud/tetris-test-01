@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TETRIS - 80s Minimalism</title>
+    <title>TETRIS - 80s Minimalism Edition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -21,12 +21,73 @@
     <div id="mainMenu" class="main-menu">
         <div class="menu-container">
             <h1 class="title-text">TETRIS</h1>
-            <button id="playBtn" class="start-btn">START</button>
+            <p class="subtitle">80s Minimalism Edition</p>
+            <div class="menu-buttons">
+                <button id="playBtn" class="start-btn">START GAME</button>
+                <button id="instructionsBtn" class="menu-btn">INSTRUCTIONS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions Screen -->
+    <div id="instructionsScreen" class="instructions-screen hidden">
+        <div class="instructions-container">
+            <h2 class="instructions-title">HOW TO PLAY</h2>
+            <div class="instructions-content">
+                <div class="instruction-section">
+                    <h3>OBJECTIVE</h3>
+                    <p>Clear horizontal lines by filling them with tetromino pieces. The game gets faster as you progress!</p>
+                </div>
+                <div class="instruction-section">
+                    <h3>CONTROLS</h3>
+                    <div class="controls-grid">
+                        <div class="control-row">
+                            <span class="key">← →</span>
+                            <span class="action">Move left/right</span>
+                        </div>
+                        <div class="control-row">
+                            <span class="key">↓</span>
+                            <span class="action">Soft drop</span>
+                        </div>
+                        <div class="control-row">
+                            <span class="key">↑</span>
+                            <span class="action">Rotate piece</span>
+                        </div>
+                        <div class="control-row">
+                            <span class="key">SPACE</span>
+                            <span class="action">Hard drop</span>
+                        </div>
+                        <div class="control-row">
+                            <span class="key">C</span>
+                            <span class="action">Hold piece</span>
+                        </div>
+                        <div class="control-row">
+                            <span class="key">P</span>
+                            <span class="action">Pause/Resume</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="instruction-section">
+                    <h3>SCORING</h3>
+                    <p>• Single line: 100 × level<br>
+                    • Double lines: 300 × level<br>
+                    • Triple lines: 500 × level<br>
+                    • Tetris (4 lines): 800 × level</p>
+                </div>
+            </div>
+            <button id="backToMenuBtn" class="start-btn">BACK TO MENU</button>
         </div>
     </div>
 
     <!-- Game Screen -->
     <div id="gameScreen" class="game-screen hidden">
+        <!-- Header -->
+        <div class="game-header">
+            <h1 class="game-title">TETRIS</h1>
+            <div class="game-status" id="gameStatus">READY</div>
+        </div>
+
+        <!-- Main Game Container -->
         <div class="game-container">
             <!-- Left Panel - Hold & Score -->
             <div class="left-panel">
@@ -50,6 +111,10 @@
                         <div class="score-label">LINES</div>
                         <div id="lines" class="score-value">000</div>
                     </div>
+                    <div class="score-item">
+                        <div class="score-label">HIGH SCORE</div>
+                        <div id="highScore" class="score-value">000000</div>
+                    </div>
                 </div>
             </div>
 
@@ -57,6 +122,9 @@
             <div class="center-panel">
                 <div class="game-board">
                     <canvas id="gameCanvas"></canvas>
+                    <div class="game-overlay" id="gameOverlay">
+                        <div class="pause-message hidden" id="pauseMessage">PAUSED</div>
+                    </div>
                 </div>
             </div>
 
@@ -84,6 +152,10 @@
                         <span class="action">ROTATE</span>
                     </div>
                     <div class="control-item">
+                        <span class="key">SPACE</span>
+                        <span class="action">HARD DROP</span>
+                    </div>
+                    <div class="control-item">
                         <span class="key">C</span>
                         <span class="action">HOLD</span>
                     </div>
@@ -94,9 +166,24 @@
                 </div>
 
                 <div class="game-buttons">
+                    <button id="pauseBtn" class="game-btn">PAUSE</button>
                     <button id="resetBtn" class="game-btn">RESET</button>
                     <button id="menuBtn" class="game-btn">MENU</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Mobile Controls -->
+        <div class="mobile-controls hidden" id="mobileControls">
+            <div class="mobile-control-row">
+                <button class="mobile-btn mobile-rotate" id="mobileRotate">↻</button>
+                <button class="mobile-btn mobile-hold" id="mobileHold">HOLD</button>
+                <button class="mobile-btn mobile-drop" id="mobileDrop">DROP</button>
+            </div>
+            <div class="mobile-control-row">
+                <button class="mobile-btn mobile-left" id="mobileLeft">←</button>
+                <button class="mobile-btn mobile-down" id="mobileDown">↓</button>
+                <button class="mobile-btn mobile-right" id="mobileRight">→</button>
             </div>
         </div>
     </div>
@@ -118,14 +205,23 @@
                     <span class="stat-label">LINES CLEARED</span>
                     <span id="finalLines" class="stat-value">000</span>
                 </div>
+                <div class="final-high-score" id="finalHighScore" style="display: none;">
+                    <span class="stat-label">NEW HIGH SCORE!</span>
+                </div>
             </div>
-            <button id="playAgainBtn" class="start-btn">PLAY AGAIN</button>
+            <div class="game-over-buttons">
+                <button id="playAgainBtn" class="start-btn">PLAY AGAIN</button>
+                <button id="backToMenuFromGameOverBtn" class="menu-btn">MAIN MENU</button>
+            </div>
         </div>
     </div>
 
     <!-- Particle Effects Container -->
     <div id="particleContainer" class="particle-container"></div>
     <div id="explosionContainer" class="explosion-container"></div>
+
+    <!-- Score Popup Container -->
+    <div id="scorePopupContainer" class="score-popup-container"></div>
 
     <script src="tetris.js"></script>
 </body>
