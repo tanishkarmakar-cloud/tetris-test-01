@@ -433,7 +433,7 @@ class TetrisGame {
     }
     
     /**
-     * Initialize advanced sound system with reverb and metronome
+     * Initialize simple techno sound system with metronome and reverb
      */
     initSounds() {
         try {
@@ -443,22 +443,14 @@ class TetrisGame {
             
             // Initialize audio context on first user interaction
             this.initAudioContext = () => {
-                console.log('initAudioContext called');
-                if (this.audioInitialized && this.audioContext) {
-                    console.log('Audio already initialized');
-                    return;
-                }
+                if (this.audioInitialized && this.audioContext) return;
                 
                 try {
-                    console.log('Creating audio context...');
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    console.log('Audio context created, state:', this.audioContext.state);
                     
                     // Resume audio context if suspended
                     if (this.audioContext.state === 'suspended') {
-                        console.log('Resuming suspended audio context...');
                         this.audioContext.resume().then(() => {
-                            console.log('Audio context resumed, state:', this.audioContext.state);
                             this.updateAudioStatus();
                         });
                     } else {
@@ -466,9 +458,8 @@ class TetrisGame {
                     }
                     
                     this.audioInitialized = true;
-                    console.log('Audio context initialized successfully');
                 } catch (error) {
-                    console.error('Failed to initialize audio context:', error);
+                    console.warn('Failed to initialize audio context:', error);
                 }
             };
             
@@ -524,28 +515,24 @@ class TetrisGame {
                 const frequency = isStrongBeat ? 80 : 60;
                 const volume = isStrongBeat ? 0.15 : 0.08;
                 
-                this.createEtherealTone(frequency, 0.1, 'sine', volume, true);
+                this.createTechnoSound(frequency, 0.1, 'sine', volume, true);
                 this.updateMetronomeVisual(this.beatCount % 4);
             };
             
-            // Create ethereal tone with reverb
-            this.createEtherealTone = (frequency, duration, type = 'sine', volume = 0.1, isMetronome = false) => {
+            // Create techno sound with reverb
+            this.createTechnoSound = (frequency, duration, type = 'sine', volume = 0.1, isMetronome = false) => {
                 if (!this.audioInitialized || !this.audioContext) {
                     this.initAudioContext();
-                    if (!this.audioInitialized || !this.audioContext) {
-                        console.log('Audio context not available, skipping sound');
-                        return;
-                    }
+                    if (!this.audioInitialized || !this.audioContext) return;
                 }
-                
-                console.log(`Playing sound: ${frequency}Hz, ${type}, ${volume} volume`);
                 
                 const oscillator = this.audioContext.createOscillator();
                 const gainNode = this.audioContext.createGain();
+                const reverb = this.createReverb();
                 
-                // Simplified audio chain - direct connection first
+                // Connect audio chain with reverb
                 oscillator.connect(gainNode);
-                gainNode.connect(this.audioContext.destination);
+                gainNode.connect(reverb.convolver);
                 
                 // Set oscillator properties
                 oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
@@ -561,87 +548,54 @@ class TetrisGame {
             };
             
             // 80s German New Age Techno scales
-            this.scales = {
-                dorian: [261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16], // C Dorian
-                phrygian: [261.63, 277.18, 311.13, 329.63, 392.00, 415.30, 466.16], // C Phrygian
-                lydian: [261.63, 293.66, 329.63, 369.99, 392.00, 440.00, 493.88] // C Lydian
-            };
+            // Simple techno frequencies
+            this.technoFreqs = [100, 150, 200, 250, 300, 400, 500, 600];
             
-            this.currentScale = 'dorian';
-            this.scaleIndex = 0;
-            
-            this.getNextNote = () => {
-                const scale = this.scales[this.currentScale];
-                const note = scale[this.scaleIndex % scale.length];
-                this.scaleIndex++;
-                return note;
+            this.getNextTechnoFreq = () => {
+                const freq = this.technoFreqs[Math.floor(Math.random() * this.technoFreqs.length)];
+                return freq;
             };
             
             return {
                 test: () => {
-                    console.log('Testing audio...');
-                    this.createEtherealTone(440, 0.5, 'sine', 0.3);
+                    this.createTechnoSound(440, 0.5, 'sine', 0.3);
                 },
                 move: () => {
-                    const note = this.getNextNote();
-                    this.createEtherealTone(note, 0.15, 'sine', 0.12);
+                    const freq = this.getNextTechnoFreq();
+                    this.createTechnoSound(freq, 0.1, 'square', 0.1);
                 },
                 rotate: () => {
-                    const note = this.getNextNote() * 1.5;
-                    this.createEtherealTone(note, 0.2, 'triangle', 0.15);
+                    const freq = this.getNextTechnoFreq() * 1.5;
+                    this.createTechnoSound(freq, 0.15, 'triangle', 0.12);
                 },
                 drop: () => {
-                    const note = this.getNextNote() * 0.5;
-                    this.createEtherealTone(note, 0.3, 'sawtooth', 0.18);
+                    const freq = this.getNextTechnoFreq() * 0.5;
+                    this.createTechnoSound(freq, 0.2, 'sawtooth', 0.15);
                 },
                 lineClear: () => {
-                    // Arpeggiated chord progression
-                    const scale = this.scales[this.currentScale];
-                    const chord = [scale[0], scale[2], scale[4], scale[6]];
-                    
-                    chord.forEach((note, index) => {
-                        setTimeout(() => {
-                            this.createEtherealTone(note, 0.4, 'sine', 0.2);
-                        }, index * 100);
-                    });
-                    
-                    // Change scale for next sequence
-                    const scales = Object.keys(this.scales);
-                    this.currentScale = scales[(scales.indexOf(this.currentScale) + 1) % scales.length];
-                    this.scaleIndex = 0;
+                    // Simple chord
+                    this.createTechnoSound(400, 0.3, 'triangle', 0.2);
+                    setTimeout(() => this.createTechnoSound(500, 0.3, 'triangle', 0.2), 100);
+                    setTimeout(() => this.createTechnoSound(600, 0.3, 'triangle', 0.2), 200);
                 },
                 gameOver: () => {
-                    // Descending ethereal sequence
-                    const frequencies = [523.25, 466.16, 415.30, 369.99, 329.63, 293.66, 261.63];
-                    frequencies.forEach((freq, index) => {
-                        setTimeout(() => {
-                            this.createEtherealTone(freq, 0.8, 'sine', 0.25);
-                        }, index * 200);
-                    });
+                    // Descending sound
+                    this.createTechnoSound(400, 0.3, 'sawtooth', 0.2);
+                    setTimeout(() => this.createTechnoSound(300, 0.3, 'sawtooth', 0.2), 150);
+                    setTimeout(() => this.createTechnoSound(200, 0.3, 'sawtooth', 0.2), 300);
                 },
                 button: () => {
-                    const note = this.getNextNote() * 2;
-                    this.createEtherealTone(note, 0.1, 'square', 0.1);
+                    this.createTechnoSound(800, 0.1, 'square', 0.1);
                 },
                 levelUp: () => {
-                    // Ascending ethereal sequence
-                    const scale = this.scales[this.currentScale];
-                    const sequence = scale.slice(0, 5);
-                    
-                    sequence.forEach((note, index) => {
-                        setTimeout(() => {
-                            this.createEtherealTone(note, 0.3, 'sine', 0.15);
-                        }, index * 150);
-                    });
+                    this.createTechnoSound(600, 0.4, 'triangle', 0.2);
                 },
                 tetris: () => {
-                    // Special Tetris chord progression
-                    const tetrisChord = [261.63, 329.63, 392.00, 523.25, 659.25];
-                    tetrisChord.forEach((note, index) => {
-                        setTimeout(() => {
-                            this.createEtherealTone(note, 0.5, 'sine', 0.22);
-                        }, index * 80);
-                    });
+                    // Special Tetris sound
+                    this.createTechnoSound(400, 0.2, 'triangle', 0.25);
+                    setTimeout(() => this.createTechnoSound(500, 0.2, 'triangle', 0.25), 100);
+                    setTimeout(() => this.createTechnoSound(600, 0.2, 'triangle', 0.25), 200);
+                    setTimeout(() => this.createTechnoSound(800, 0.2, 'triangle', 0.25), 300);
                 },
                 startMetronome: () => this.startMetronome(),
                 stopMetronome: () => this.stopMetronome()
