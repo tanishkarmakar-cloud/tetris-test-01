@@ -1437,6 +1437,7 @@ class TetrisGame {
                     const filter = this.audioContext.createBiquadFilter();
                     const lfo = this.audioContext.createOscillator();
                     const lfoGain = this.audioContext.createGain();
+                    const reverb = this.createEtherealReverb();
                     
                     // Set up oscillator
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
@@ -1451,55 +1452,59 @@ class TetrisGame {
                     lfo.connect(lfoGain);
                     lfoGain.connect(oscillator.frequency);
                     
-                    // Filter for classical warmth with musical character
+                    // Filter for ethereal warmth with musical character
                     filter.type = 'lowpass';
-                    filter.frequency.setValueAtTime(frequency * 3, this.audioContext.currentTime);
-                    filter.Q.setValueAtTime(3, this.audioContext.currentTime);
+                    filter.frequency.setValueAtTime(frequency * 2.5, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(4, this.audioContext.currentTime);
                     
-                    // Connect audio chain
+                    // Connect audio chain with heavy reverb
                     oscillator.connect(filter);
                     filter.connect(gainNode);
-                    gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.sidechainGain || this.audioContext.destination);
                     
                     // Musical articulations
                     const now = this.audioContext.currentTime;
                     gainNode.gain.setValueAtTime(0, now);
                     
+                    // Extended duration for ethereal effect
+                    const etherealDuration = duration * 2.5;
+                    
                     switch (articulation) {
                         case 'staccato':
-                            // Short, detached notes
+                            // Short, detached notes with ethereal tail
                             gainNode.gain.linearRampToValueAtTime(volume, now + 0.02);
-                            gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + duration * 0.3);
-                            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.6);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + duration * 0.2);
+                            gainNode.gain.exponentialRampToValueAtTime(0.0001, now + etherealDuration);
                             break;
                         case 'accent':
-                            // Accented notes with emphasis
+                            // Accented notes with ethereal emphasis
                             gainNode.gain.linearRampToValueAtTime(volume * 1.2, now + 0.01);
-                            gainNode.gain.linearRampToValueAtTime(volume, now + 0.05);
-                            gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + duration * 0.8);
-                            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + 0.05);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.4, now + duration * 0.6);
+                            gainNode.gain.exponentialRampToValueAtTime(0.0001, now + etherealDuration);
                             break;
                         case 'marcato':
-                            // Strong, marked notes
+                            // Strong, marked notes with ethereal power
                             gainNode.gain.linearRampToValueAtTime(volume * 1.3, now + 0.005);
-                            gainNode.gain.linearRampToValueAtTime(volume * 0.9, now + 0.1);
-                            gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + duration * 0.7);
-                            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.9, now + 0.08);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.5, now + duration * 0.5);
+                            gainNode.gain.exponentialRampToValueAtTime(0.0001, now + etherealDuration);
                             break;
                         case 'legato':
                         default:
-                            // Smooth, connected notes
+                            // Smooth, connected notes with ethereal flow
                             gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
-                            gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + duration * 0.8);
-                            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + duration * 0.6);
+                            gainNode.gain.exponentialRampToValueAtTime(0.0001, now + etherealDuration);
                             break;
                     }
                     
                     // Start oscillators
                     oscillator.start(now);
                     lfo.start(now);
-                    oscillator.stop(now + duration);
-                    lfo.stop(now + duration);
+                    oscillator.stop(now + etherealDuration);
+                    lfo.stop(now + etherealDuration);
                 } catch (error) {
                     console.warn('Musical note error:', error);
                 }
@@ -1519,6 +1524,38 @@ class TetrisGame {
                     this.classicalSystem.harmonicVoices = [];
                 }
                 this.classicalSystem.active = false;
+            };
+            
+            // Create ethereal reverb for floating, otherworldly sounds
+            this.createEtherealReverb = () => {
+                if (!this.audioContext) return { convolver: null, reverbGain: null };
+                
+                try {
+                    const convolver = this.audioContext.createConvolver();
+                    const reverbGain = this.audioContext.createGain();
+                    
+                    // Create ethereal impulse response (6 seconds for very long reverb)
+                    const length = this.audioContext.sampleRate * 6;
+                    const impulse = this.audioContext.createBuffer(2, length, this.audioContext.sampleRate);
+                    
+                    for (let channel = 0; channel < 2; channel++) {
+                        const channelData = impulse.getChannelData(channel);
+                        for (let i = 0; i < length; i++) {
+                            const decay = Math.pow(1 - i / length, 2);
+                            const noise = (Math.random() * 2 - 1) * decay;
+                            const modulation = Math.sin(i * 0.001) * 0.3; // Slow modulation
+                            channelData[i] = noise * (0.3 + modulation) * decay;
+                        }
+                    }
+                    
+                    convolver.buffer = impulse;
+                    reverbGain.gain.setValueAtTime(0.9, this.audioContext.currentTime); // Heavy reverb
+                    
+                    return { convolver, reverbGain };
+                } catch (error) {
+                    console.warn('Ethereal reverb error:', error);
+                    return { convolver: null, reverbGain: null };
+                }
             };
             
             // Create arpeggiator sound with FM synthesis
@@ -1790,12 +1827,12 @@ class TetrisGame {
                     this.triggerSidechain();
                 },
             lineClear: () => {
-                    // Classical chord arpeggio for line clear - more prominent
+                    // Classical chord arpeggio for line clear - ethereal and prominent
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     currentChord.forEach((freq, index) => {
                         setTimeout(() => {
-                            this.createMusicalNote(freq, 0.6, 0.7, 'triangle', 'accent');
-                        }, index * 120);
+                            this.createMusicalNote(freq, 0.8, 0.7, 'triangle', 'accent');
+                        }, index * 150); // Slower timing for ethereal effect
                     });
                     this.triggerSidechain();
             },
@@ -1813,14 +1850,14 @@ class TetrisGame {
                     this.createTechnoSound(600, 0.4, 'triangle', 0.25);
                 },
                 tetris: () => {
-                    // Special Tetris - ascending scale for triumph - very prominent
+                    // Special Tetris - ascending scale for triumph - ethereal and very prominent
                     const scale = this.classicalSystem.scale;
                     const ascendingScale = scale.slice(0, 4).concat(scale.slice(0, 4).map(f => f * 2));
                     
                     ascendingScale.forEach((freq, index) => {
                         setTimeout(() => {
-                            this.createMusicalNote(freq, 0.5, 0.8, 'triangle', 'marcato');
-                        }, index * 100);
+                            this.createMusicalNote(freq, 0.7, 0.8, 'triangle', 'marcato');
+                        }, index * 120); // Slower timing for ethereal effect
                     });
                 },
                 startMetronome: () => this.startMetronome(),
