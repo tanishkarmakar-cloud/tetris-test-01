@@ -894,36 +894,184 @@ class TetrisGame {
                 }
             };
             
-            // Create minimalist pulse (Glass/Reich/Eno style)
+            // Create enhanced minimalist pulse with synth layers (Glass/Reich/Eno style)
             this.createMinimalistPulse = (frequency, volume) => {
                 if (!this.audioInitialized || !this.audioContext) return;
                 
+                // Create multiple synth layers for rich backing track
+                this.createPrimarySynthLayer(frequency, volume);
+                this.createHarmonicSynthLayer(frequency, volume * 0.7);
+                this.createAmbientSynthLayer(frequency, volume * 0.5);
+                this.createPercussiveSynthLayer(frequency, volume * 0.3);
+            };
+            
+            // Primary synth layer - main tone
+            this.createPrimarySynthLayer = (frequency, volume) => {
                 const oscillator = this.audioContext.createOscillator();
                 const gainNode = this.audioContext.createGain();
                 const filter = this.audioContext.createBiquadFilter();
+                const lfo = this.audioContext.createOscillator();
+                const lfoGain = this.audioContext.createGain();
+                const reverb = this.createEtherealReverb();
                 
                 // Pure sine wave for minimalist aesthetic
                 oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
                 oscillator.type = 'sine';
                 
-                // Gentle filtering
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
-                filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                // Subtle LFO for movement
+                lfo.frequency.setValueAtTime(0.3 + Math.random() * 0.2, this.audioContext.currentTime);
+                lfo.type = 'sine';
+                lfoGain.gain.setValueAtTime(frequency * 0.01, this.audioContext.currentTime);
                 
-                // Connect audio chain
+                // Gentle filtering with LFO modulation
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(frequency * 2.5, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(0.6, this.audioContext.currentTime);
+                
+                // Connect LFO to filter
+                lfo.connect(lfoGain);
+                lfoGain.connect(filter.frequency);
+                
+                // Connect audio chain with reverb
                 oscillator.connect(filter);
                 filter.connect(gainNode);
-                gainNode.connect(this.masterGain);
+                gainNode.connect(reverb.convolver);
+                reverb.reverbGain.connect(this.masterGain);
                 
                 // Minimalist envelope - quick attack, long sustain, slow decay
-                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.1);
-                gainNode.gain.linearRampToValueAtTime(volume * 0.8, this.audioContext.currentTime + 0.5);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 1.5);
+                const now = this.audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
+                gainNode.gain.linearRampToValueAtTime(volume * 0.85, now + 0.5);
+                gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + 1.0);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
                 
-                oscillator.start(this.audioContext.currentTime);
-                oscillator.stop(this.audioContext.currentTime + 1.5);
+                oscillator.start(now);
+                lfo.start(now);
+                oscillator.stop(now + 1.8);
+                lfo.stop(now + 1.8);
+            };
+            
+            // Harmonic synth layer - adds richness
+            this.createHarmonicSynthLayer = (frequency, volume) => {
+                const harmonics = [2, 3, 5]; // Octave, fifth, major third
+                
+                harmonics.forEach((harmonic, index) => {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const reverb = this.createEtherealReverb();
+                    
+                    const harmonicFreq = frequency * harmonic;
+                    const harmonicVolume = volume / (harmonic * 0.9);
+                    
+                    oscillator.frequency.setValueAtTime(harmonicFreq, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Harmonic filtering
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(harmonicFreq * 2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.4, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain);
+                    
+                    // Harmonic envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(harmonicVolume, now + 0.15);
+                    gainNode.gain.linearRampToValueAtTime(harmonicVolume * 0.8, now + 0.6);
+                    gainNode.gain.linearRampToValueAtTime(harmonicVolume * 0.5, now + 1.2);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + 1.8);
+                });
+            };
+            
+            // Ambient synth layer - adds space and depth
+            this.createAmbientSynthLayer = (frequency, volume) => {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                const lfo = this.audioContext.createOscillator();
+                const lfoGain = this.audioContext.createGain();
+                const reverb = this.createEtherealReverb();
+                
+                // Ambient frequency (lower for depth)
+                const ambientFreq = frequency * 0.5;
+                oscillator.frequency.setValueAtTime(ambientFreq, this.audioContext.currentTime);
+                oscillator.type = 'triangle';
+                
+                // Slow LFO for ambient movement
+                lfo.frequency.setValueAtTime(0.1 + Math.random() * 0.1, this.audioContext.currentTime);
+                lfo.type = 'sine';
+                lfoGain.gain.setValueAtTime(ambientFreq * 0.05, this.audioContext.currentTime);
+                
+                // Gentle filtering
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(ambientFreq * 2.5, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(0.3, this.audioContext.currentTime);
+                
+                // Connect LFO to filter
+                lfo.connect(lfoGain);
+                lfoGain.connect(filter.frequency);
+                
+                // Connect audio chain with heavy reverb
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(reverb.convolver);
+                reverb.reverbGain.connect(this.masterGain);
+                
+                // Slow ambient envelope
+                const now = this.audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(volume, now + 0.3);
+                gainNode.gain.linearRampToValueAtTime(volume * 0.9, now + 0.8);
+                gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + 1.5);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+                
+                oscillator.start(now);
+                lfo.start(now);
+                oscillator.stop(now + 2.0);
+                lfo.stop(now + 2.0);
+            };
+            
+            // Percussive synth layer - adds rhythm and clarity
+            this.createPercussiveSynthLayer = (frequency, volume) => {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                const reverb = this.createEtherealReverb();
+                
+                // Percussive frequency (higher for attack)
+                const percFreq = frequency * 4;
+                oscillator.frequency.setValueAtTime(percFreq, this.audioContext.currentTime);
+                oscillator.type = 'square';
+                
+                // Sharp filtering for percussive attack
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(percFreq, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(4, this.audioContext.currentTime);
+                
+                // Connect audio chain with lighter reverb
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(reverb.convolver);
+                reverb.reverbGain.gain.value = 0.3; // Lighter reverb for percussive layer
+                reverb.reverbGain.connect(this.masterGain);
+                
+                // Quick percussive envelope
+                const now = this.audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(volume, now + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 0.4);
             };
             
             // Add minimalist variation (Glass-style additive process)
@@ -3212,43 +3360,195 @@ class TetrisGame {
                 }
             };
             
-            // Create clean tone with reverb - simple and clean
-            this.createCleanTone = (frequency, duration, volume) => {
+            // Create enhanced sound effect with multiple layers and reverb
+            this.createEnhancedSoundEffect = (frequency, duration, volume, effectType = 'move') => {
                 if (!this.audioInitialized || !this.audioContext) return;
                 
-                try {
+                // Create multiple layers for rich, clear sound
+                this.createPrimaryLayer(frequency, duration, volume, effectType);
+                this.createHarmonicLayer(frequency, duration, volume * 0.6, effectType);
+                this.createPercussiveLayer(frequency, duration, volume * 0.4, effectType);
+                this.createAmbientLayer(frequency, duration, volume * 0.3, effectType);
+            };
+            
+            // Primary layer - main tone with enhanced clarity
+            this.createPrimaryLayer = (frequency, duration, volume, effectType) => {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                const lfo = this.audioContext.createOscillator();
+                const lfoGain = this.audioContext.createGain();
+                const reverb = this.createEtherealReverb();
+                
+                // Oscillator setup based on effect type
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                switch(effectType) {
+                    case 'move': oscillator.type = 'sine'; break;
+                    case 'rotate': oscillator.type = 'triangle'; break;
+                    case 'drop': oscillator.type = 'sawtooth'; break;
+                    default: oscillator.type = 'sine';
+                }
+                
+                // LFO for subtle movement and clarity
+                lfo.frequency.setValueAtTime(2 + Math.random() * 3, this.audioContext.currentTime);
+                lfo.type = 'sine';
+                lfoGain.gain.setValueAtTime(frequency * 0.02, this.audioContext.currentTime);
+                
+                // Dynamic filtering based on effect type for clarity
+                filter.type = 'lowpass';
+                const filterFreq = frequency * (effectType === 'drop' ? 3 : 2.5);
+                filter.frequency.setValueAtTime(filterFreq, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(effectType === 'rotate' ? 2 : 1.2, this.audioContext.currentTime);
+                
+                // Connect LFO to filter for subtle movement
+                lfo.connect(lfoGain);
+                lfoGain.connect(filter.frequency);
+                
+                // Connect audio chain with heavy reverb
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(reverb.convolver);
+                reverb.reverbGain.connect(this.masterGain);
+                
+                // Enhanced envelope for clarity
+                const now = this.audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(volume, now + 0.03);
+                gainNode.gain.linearRampToValueAtTime(volume * 0.85, now + duration * 0.5);
+                gainNode.gain.linearRampToValueAtTime(volume * 0.4, now + duration * 0.8);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                
+                oscillator.start(now);
+                lfo.start(now);
+                oscillator.stop(now + duration);
+                lfo.stop(now + duration);
+            };
+            
+            // Harmonic layer - adds richness and depth
+            this.createHarmonicLayer = (frequency, duration, volume, effectType) => {
+                const harmonics = [2, 3, 4]; // Octave, fifth, double octave
+                
+                harmonics.forEach((harmonic, index) => {
                     const oscillator = this.audioContext.createOscillator();
                     const gainNode = this.audioContext.createGain();
                     const filter = this.audioContext.createBiquadFilter();
-                    const reverb = this.createReverb();
+                    const reverb = this.createEtherealReverb();
                     
-                    // Clean tone
-                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    const harmonicFreq = frequency * harmonic;
+                    const harmonicVolume = volume / (harmonic * 0.8);
+                    
+                    oscillator.frequency.setValueAtTime(harmonicFreq, this.audioContext.currentTime);
                     oscillator.type = 'sine';
                     
-                    // Soft low-pass filter for warmth
+                    // Harmonic filtering for clarity
                     filter.type = 'lowpass';
-                    filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
-                    filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                    filter.frequency.setValueAtTime(harmonicFreq * 1.8, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.6, this.audioContext.currentTime);
                     
                     // Connect audio chain with reverb
                     oscillator.connect(filter);
                     filter.connect(gainNode);
                     gainNode.connect(reverb.convolver);
-                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    reverb.reverbGain.connect(this.masterGain);
                     
-                    // Clean envelope
+                    // Harmonic envelope
                     const now = this.audioContext.currentTime;
                     gainNode.gain.setValueAtTime(0, now);
-                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.05);
-                    gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + duration * 0.6);
+                    gainNode.gain.linearRampToValueAtTime(harmonicVolume, now + 0.08);
+                    gainNode.gain.linearRampToValueAtTime(harmonicVolume * 0.7, now + duration * 0.6);
+                    gainNode.gain.linearRampToValueAtTime(harmonicVolume * 0.3, now + duration * 0.8);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
                     
                     oscillator.start(now);
                     oscillator.stop(now + duration);
-                } catch (error) {
-                    console.warn('Clean tone error:', error);
-                }
+                });
+            };
+            
+            // Percussive layer - adds attack and clarity
+            this.createPercussiveLayer = (frequency, duration, volume, effectType) => {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                const reverb = this.createEtherealReverb();
+                
+                // Percussive frequency (higher for attack)
+                const percFreq = frequency * (effectType === 'drop' ? 4 : 3.5);
+                oscillator.frequency.setValueAtTime(percFreq, this.audioContext.currentTime);
+                oscillator.type = 'square';
+                
+                // Sharp filtering for percussive attack
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(percFreq, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(6, this.audioContext.currentTime);
+                
+                // Connect audio chain with lighter reverb
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(reverb.convolver);
+                reverb.reverbGain.gain.value = 0.4; // Lighter reverb for percussive layer
+                reverb.reverbGain.connect(this.masterGain);
+                
+                // Quick percussive envelope
+                const now = this.audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(volume, now + 0.005);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.25);
+                
+                oscillator.start(now);
+                oscillator.stop(now + duration * 0.25);
+            };
+            
+            // Ambient layer - adds space and depth
+            this.createAmbientLayer = (frequency, duration, volume, effectType) => {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                const lfo = this.audioContext.createOscillator();
+                const lfoGain = this.audioContext.createGain();
+                const reverb = this.createEtherealReverb();
+                
+                // Ambient frequency (lower for depth)
+                const ambientFreq = frequency * 0.5;
+                oscillator.frequency.setValueAtTime(ambientFreq, this.audioContext.currentTime);
+                oscillator.type = 'triangle';
+                
+                // Slow LFO for ambient movement
+                lfo.frequency.setValueAtTime(0.5 + Math.random() * 1, this.audioContext.currentTime);
+                lfo.type = 'sine';
+                lfoGain.gain.setValueAtTime(ambientFreq * 0.1, this.audioContext.currentTime);
+                
+                // Gentle filtering
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(ambientFreq * 2.2, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(0.4, this.audioContext.currentTime);
+                
+                // Connect LFO to filter
+                lfo.connect(lfoGain);
+                lfoGain.connect(filter.frequency);
+                
+                // Connect audio chain with heavy reverb
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(reverb.convolver);
+                reverb.reverbGain.connect(this.masterGain);
+                
+                // Slow ambient envelope
+                const now = this.audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(volume, now + 0.2);
+                gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + duration * 0.7);
+                gainNode.gain.linearRampToValueAtTime(volume * 0.4, now + duration * 0.9);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                
+                oscillator.start(now);
+                lfo.start(now);
+                oscillator.stop(now + duration);
+                lfo.stop(now + duration);
+            };
+            
+            // Legacy function for compatibility - now uses enhanced system
+            this.createCleanTone = (frequency, duration, volume) => {
+                this.createEnhancedSoundEffect(frequency, duration, volume, 'move');
             };
             
             // Create harmonious note - simple, clean, and musical with natural layering
@@ -3541,7 +3841,7 @@ class TetrisGame {
                     this.createTechnoSound(440, 0.5, 'sine', 0.3);
                 },
                 move: () => {
-                    // Clean move sound with reverb
+                    // Enhanced move sound with layered clarity
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[1]; // Use middle voice of current chord
                     
@@ -3551,13 +3851,13 @@ class TetrisGame {
                     // Balanced volume for clean sound
                     const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume;
                     
-                    // Simple clean tone with reverb
-                    this.createCleanTone(freq, 0.3, adaptiveVolume);
+                    // Enhanced layered sound effect
+                    this.createEnhancedSoundEffect(freq, 0.4, adaptiveVolume, 'move');
                     
                     this.triggerSidechain();
                 },
                 rotate: () => {
-                    // Clean rotate sound with reverb
+                    // Enhanced rotate sound with layered clarity
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[2]; // Use top voice of current chord
                     
@@ -3567,13 +3867,13 @@ class TetrisGame {
                     // Balanced volume with moderate tension boost
                     const adaptiveVolume = 0.8 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.2);
                     
-                    // Simple clean tone with reverb
-                    this.createCleanTone(freq, 0.4, adaptiveVolume);
+                    // Enhanced layered sound effect
+                    this.createEnhancedSoundEffect(freq, 0.5, adaptiveVolume, 'rotate');
                     
                     this.triggerSidechain();
                 },
                 drop: () => {
-                    // Clean drop sound with reverb
+                    // Enhanced drop sound with layered clarity
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[0]; // Bass note
                     
@@ -3583,8 +3883,8 @@ class TetrisGame {
                     // Balanced volume with moderate energy boost
                     const adaptiveVolume = 1.0 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.3);
                     
-                    // Simple clean tone with reverb
-                    this.createCleanTone(freq, 0.5, adaptiveVolume);
+                    // Enhanced layered sound effect
+                    this.createEnhancedSoundEffect(freq, 0.6, adaptiveVolume, 'drop');
                     
                     this.triggerSidechain();
                 },
