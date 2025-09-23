@@ -501,6 +501,24 @@ body {
     }
 }
 
+.audio-status {
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.audio-status.ready {
+    color: #00ff00;
+    text-shadow: 0 0 10px #00ff00;
+}
+
+.audio-status.muted {
+    color: #ff0000;
+    text-shadow: 0 0 10px #ff0000;
+}
+
 .game-container {
     display: flex;
     gap: 1.5rem;

@@ -252,43 +252,51 @@ class TetrisGame {
     setupEventListeners() {
         // Main menu events
         document.getElementById('playBtn').addEventListener('click', () => {
+            this.initAudioContext();
             this.sounds.button();
             this.showGameScreen();
         });
         
         document.getElementById('instructionsBtn').addEventListener('click', () => {
+            this.initAudioContext();
             this.sounds.button();
             this.showInstructionsScreen();
         });
         
         document.getElementById('backToMenuBtn').addEventListener('click', () => {
+            this.initAudioContext();
             this.sounds.button();
             this.showMainMenu();
         });
         
         document.getElementById('menuBtn').addEventListener('click', () => {
+            this.initAudioContext();
             this.sounds.button();
             this.showMainMenu();
         });
         
         // Game control events
         document.getElementById('resetBtn').addEventListener('click', () => {
+            this.initAudioContext();
             this.sounds.button();
             this.resetGame();
         });
         
         document.getElementById('pauseBtn').addEventListener('click', () => {
+            this.initAudioContext();
             this.sounds.button();
             this.togglePause();
         });
         
         // Game over screen events
         document.getElementById('playAgainBtn').addEventListener('click', () => {
+            this.initAudioContext();
             this.sounds.button();
             this.showGameScreen();
         });
         
         document.getElementById('backToMenuFromGameOverBtn').addEventListener('click', () => {
+            this.initAudioContext();
             this.sounds.button();
             this.showMainMenu();
         });
@@ -381,6 +389,9 @@ class TetrisGame {
      * Handle mobile input
      */
     handleMobileInput(action) {
+        // Initialize audio on first user interaction
+        this.initAudioContext();
+        
         if (!this.gameRunning || this.gamePaused || !this.currentPiece) return;
         
         const currentTime = Date.now();
@@ -420,7 +431,33 @@ class TetrisGame {
      */
     initSounds() {
         try {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            // Audio context will be created on first user interaction
+            this.audioContext = null;
+            this.audioInitialized = false;
+            
+            // Initialize audio context on first user interaction
+            this.initAudioContext = () => {
+                if (this.audioInitialized && this.audioContext) return;
+                
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Resume audio context if suspended
+                    if (this.audioContext.state === 'suspended') {
+                        this.audioContext.resume().then(() => {
+                            console.log('Audio context resumed');
+                            this.updateAudioStatus();
+                        });
+                    } else {
+                        this.updateAudioStatus();
+                    }
+                    
+                    this.audioInitialized = true;
+                    console.log('Audio context initialized');
+                } catch (error) {
+                    console.warn('Failed to initialize audio context:', error);
+                }
+            };
             
             // Create reverb effect
             this.createReverb = () => {
@@ -480,6 +517,11 @@ class TetrisGame {
             
             // Create ethereal tone with reverb
             this.createEtherealTone = (frequency, duration, type = 'sine', volume = 0.1, isMetronome = false) => {
+                if (!this.audioInitialized || !this.audioContext) {
+                    this.initAudioContext();
+                    if (!this.audioInitialized || !this.audioContext) return;
+                }
+                
                 const oscillator = this.audioContext.createOscillator();
                 const gainNode = this.audioContext.createGain();
                 const filter = this.audioContext.createBiquadFilter();
@@ -624,6 +666,9 @@ class TetrisGame {
      * Handle keyboard input
      */
     handleKeyPress(e) {
+        // Initialize audio on first user interaction
+        this.initAudioContext();
+        
         if (e.code === 'KeyP') {
             this.sounds.button();
             this.togglePause();
@@ -1418,6 +1463,19 @@ class TetrisGame {
                 dot.classList.add('active');
             }
         });
+    }
+    
+    updateAudioStatus() {
+        const audioStatus = document.getElementById('audioStatus');
+        if (!audioStatus) return;
+        
+        if (this.audioInitialized && this.audioContext && this.audioContext.state === 'running') {
+            audioStatus.textContent = '🔊';
+            audioStatus.className = 'audio-status ready';
+        } else {
+            audioStatus.textContent = '🔇';
+            audioStatus.className = 'audio-status muted';
+        }
     }
     
     // High score management
