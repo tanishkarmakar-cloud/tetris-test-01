@@ -4294,6 +4294,7 @@ class TetrisGame {
         // Update displays
         this.drawNextPiece();
         this.updateDisplay();
+        this.draw();
     }
     
     /**
@@ -4649,9 +4650,6 @@ class TetrisGame {
         this.dropTime = Date.now();
         this.sounds.startMetronome();
         
-        // Spawn the first piece
-        this.spawnPiece();
-        
         this.gameLoop();
     }
     
@@ -4718,6 +4716,9 @@ class TetrisGame {
         
         // Generate new pieces
         this.nextPiece = this.getRandomPiece();
+        
+        // Spawn the first piece
+        this.spawnPiece();
         
         // Update displays
         this.updateDisplay();
