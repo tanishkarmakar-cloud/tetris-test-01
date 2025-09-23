@@ -4056,53 +4056,6 @@ class TetrisGame {
     }
     
     /**
-     * Handle keyboard input
-     */
-    handleKeyPress(e) {
-        // Initialize audio on first user interaction
-        this.initAudioContext();
-        
-        if (e.code === 'KeyP') {
-            this.sounds.button();
-            this.togglePause();
-            return;
-        }
-        
-        if (!this.gameRunning || this.gamePaused || !this.currentPiece) return;
-        
-        const currentTime = Date.now();
-        if (currentTime - this.lastMoveTime < this.moveDelay) return;
-        this.lastMoveTime = currentTime;
-        
-        switch(e.code) {
-            case 'ArrowLeft':
-                this.sounds.move();
-                this.movePiece(-1, 0);
-                break;
-            case 'ArrowRight':
-                this.sounds.move();
-                this.movePiece(1, 0);
-                break;
-            case 'ArrowDown':
-                this.sounds.drop();
-                this.movePiece(0, 1);
-                break;
-            case 'ArrowUp':
-                this.sounds.rotate();
-                this.rotatePiece();
-                break;
-            case 'Space':
-                this.sounds.drop();
-                this.hardDrop();
-                break;
-            case 'KeyC':
-                this.sounds.button();
-                this.holdCurrentPiece();
-                break;
-        }
-    }
-    
-    /**
      * Generate next piece
      */
     generateNextPiece() {
@@ -4113,20 +4066,6 @@ class TetrisGame {
             y: 0
         };
         this.drawNextPiece();
-    }
-    
-    /**
-     * Spawn current piece
-     */
-    spawnPiece() {
-        this.currentPiece = this.nextPiece;
-        this.generateNextPiece();
-        this.canHold = true;
-        
-        if (this.checkCollision(this.currentPiece, 0, 0)) {
-            this.gameOver();
-        }
-        this.draw();
     }
     
     /**
@@ -4223,11 +4162,11 @@ class TetrisGame {
             }
             
             if (!canRotate) {
-            this.currentPiece.shape = originalShape;
+                this.currentPiece.shape = originalShape;
             }
         }
         
-            this.draw();
+        this.draw();
         this.addScreenShake(0.1);
     }
     
@@ -4729,11 +4668,21 @@ class TetrisGame {
     }
     
     /**
+     * Resume game
+     */
+    resumeGame() {
+        this.gamePaused = false;
+        this.dropTime = Date.now();
+        this.sounds.startMetronome();
+        this.gameLoop();
+    }
+    
+    /**
      * Toggle pause
      */
     togglePause() {
         if (this.gamePaused) {
-            this.startGame();
+            this.resumeGame();
         } else {
             this.pauseGame();
         }
@@ -4769,15 +4718,6 @@ class TetrisGame {
         
         // Generate new pieces
         this.nextPiece = this.getRandomPiece();
-        
-        // Spawn the first piece immediately
-        this.spawnPiece();
-        
-        // Start the game so pieces fall
-        this.gameRunning = true;
-        this.gamePaused = false;
-        this.sounds.startMetronome();
-        this.gameLoop();
         
         // Update displays
         this.updateDisplay();
@@ -4858,8 +4798,6 @@ class TetrisGame {
             this.canvas.focus();
             
             this.resetGame();
-            this.generateNextPiece();
-            this.spawnPiece();
             this.startGame();
         }, 100);
     }
