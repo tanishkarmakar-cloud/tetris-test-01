@@ -491,15 +491,30 @@ class TetrisGame {
             this.beatCount = 0;
             this.bpm = 128; // Classic techno tempo
             this.barCount = 0; // Track 4-beat bars
+            this.sidechainGain = null; // For sidechain compression effect
+            this.arpeggiator = {
+                active: false,
+                pattern: [0, 2, 4, 2, 0, 4, 2, 0],
+                index: 0,
+                interval: null
+            };
             
             this.startMetronome = () => {
                 if (this.metronomeInterval) return;
+                
+                // Create sidechain compression gain node
+                this.sidechainGain = this.audioContext.createGain();
+                this.sidechainGain.connect(this.audioContext.destination);
+                this.sidechainGain.gain.setValueAtTime(1, this.audioContext.currentTime);
                 
                 const beatInterval = 60000 / this.bpm; // Convert BPM to milliseconds
                 this.metronomeInterval = setInterval(() => {
                     this.playMetronomeBeat();
                     this.beatCount++;
                 }, beatInterval);
+                
+                // Start arpeggiator
+                this.startArpeggiator();
             };
             
             this.stopMetronome = () => {
@@ -507,6 +522,42 @@ class TetrisGame {
                     clearInterval(this.metronomeInterval);
                     this.metronomeInterval = null;
                 }
+                this.stopArpeggiator();
+            };
+            
+            // Start arpeggiator for melodic sequences
+            this.startArpeggiator = () => {
+                if (this.arpeggiator.interval) return;
+                
+                const arpInterval = 60000 / (this.bpm * 2); // 16th notes
+                this.arpeggiator.interval = setInterval(() => {
+                    this.playArpeggiatorNote();
+                }, arpInterval);
+            };
+            
+            this.stopArpeggiator = () => {
+                if (this.arpeggiator.interval) {
+                    clearInterval(this.arpeggiator.interval);
+                    this.arpeggiator.interval = null;
+                }
+            };
+            
+            this.playArpeggiatorNote = () => {
+                const scale = [220, 246.94, 277.18, 311.13, 349.23, 392.00, 440.00, 493.88]; // C major scale
+                const noteIndex = this.arpeggiator.pattern[this.arpeggiator.index % this.arpeggiator.pattern.length];
+                const frequency = scale[noteIndex];
+                
+                this.createArpeggiatorSound(frequency, 0.1, 'triangle', 0.05);
+                this.arpeggiator.index++;
+            };
+            
+            // Sidechain compression effect
+            this.triggerSidechain = () => {
+                if (!this.sidechainGain) return;
+                
+                const now = this.audioContext.currentTime;
+                this.sidechainGain.gain.setValueAtTime(0.3, now);
+                this.sidechainGain.gain.exponentialRampToValueAtTime(1, now + 0.2);
             };
             
             this.playMetronomeBeat = () => {
@@ -547,6 +598,16 @@ class TetrisGame {
                     if (this.barCount % 8 === 0) {
                         this.addTechnoFill();
                     }
+                    
+                    // Add polyrhythmic elements every 4 bars
+                    if (this.barCount % 4 === 0) {
+                        this.addPolyrhythmicElement();
+                    }
+                    
+                    // Tempo variations for trance-like effect
+                    if (this.barCount % 16 === 0) {
+                        this.addTempoVariation();
+                    }
                 }
             };
             
@@ -565,6 +626,74 @@ class TetrisGame {
                 }, 400);
             };
             
+            // Add polyrhythmic elements (3 against 4)
+            this.addPolyrhythmicElement = () => {
+                const tripletFreqs = [440, 554.37, 659.25]; // A, C#, E
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => {
+                        this.createArpeggiatorSound(tripletFreqs[i], 0.2, 'triangle', 0.08);
+                    }, i * 133); // 3 notes in 400ms (triplets)
+                }
+            };
+            
+            // Add tempo variations for trance effect
+            this.addTempoVariation = () => {
+                // Subtle tempo increase for build-up effect
+                const originalBPM = this.bpm;
+                this.bpm = Math.min(132, this.bpm + 2);
+                
+                setTimeout(() => {
+                    this.bpm = originalBPM;
+                }, 2000);
+            };
+            
+            // Create arpeggiator sound with FM synthesis
+            this.createArpeggiatorSound = (frequency, duration, type = 'triangle', volume = 0.1) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    // Carrier oscillator
+                    const carrier = this.audioContext.createOscillator();
+                    const modulator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const modGain = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    // FM synthesis setup
+                    carrier.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    carrier.type = type;
+                    
+                    modulator.frequency.setValueAtTime(frequency * 0.5, this.audioContext.currentTime);
+                    modulator.type = 'sine';
+                    
+                    modGain.gain.setValueAtTime(frequency * 0.3, this.audioContext.currentTime);
+                    
+                    // Connect FM synthesis
+                    modulator.connect(modGain);
+                    modGain.connect(carrier.frequency);
+                    carrier.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                    
+                    // Filter for ethereal sound
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 3, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+                    
+                    // Envelope
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    
+                    carrier.start(this.audioContext.currentTime);
+                    modulator.start(this.audioContext.currentTime);
+                    carrier.stop(this.audioContext.currentTime + duration);
+                    modulator.stop(this.audioContext.currentTime + duration);
+                } catch (error) {
+                    console.warn('Arpeggiator audio error:', error);
+                }
+            };
+            
             // Create techno drum sound with slight reverb
             this.createMetronomeSound = (frequency, duration, type = 'sine', volume = 0.1) => {
                 if (!this.audioInitialized || !this.audioContext) {
@@ -578,10 +707,11 @@ class TetrisGame {
                     const filter = this.audioContext.createBiquadFilter();
                     const reverb = this.createReverb();
                     
-                    // Connect audio chain
+                    // Connect audio chain through sidechain
                     oscillator.connect(filter);
                     filter.connect(gainNode);
                     gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.sidechainGain || this.audioContext.destination);
                     
                     // Set oscillator properties
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
@@ -660,14 +790,17 @@ class TetrisGame {
                 move: () => {
                     const freq = this.getNextTechnoFreq();
                     this.createTechnoSound(freq, 0.2, 'square', 0.15);
+                    this.triggerSidechain();
                 },
                 rotate: () => {
                     const freq = this.getNextTechnoFreq() * 1.5;
                     this.createTechnoSound(freq, 0.25, 'triangle', 0.18);
+                    this.triggerSidechain();
                 },
                 drop: () => {
                     const freq = this.getNextTechnoFreq() * 0.5;
                     this.createTechnoSound(freq, 0.3, 'sawtooth', 0.2);
+                    this.triggerSidechain();
                 },
             lineClear: () => {
                     // Layered chord progression
@@ -675,6 +808,7 @@ class TetrisGame {
                     setTimeout(() => this.createTechnoSound(500, 0.4, 'triangle', 0.25), 50);
                     setTimeout(() => this.createTechnoSound(600, 0.4, 'triangle', 0.25), 100);
                     setTimeout(() => this.createTechnoSound(800, 0.4, 'triangle', 0.25), 150);
+                    this.triggerSidechain();
             },
             gameOver: () => {
                     // Descending layered sound
