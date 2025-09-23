@@ -390,6 +390,50 @@ class TetrisGame {
     }
     
     /**
+     * Handle keyboard input
+     */
+    handleKeyPress(e) {
+        // Initialize audio on first user interaction
+        this.initAudioContext();
+        
+        if (!this.gameRunning || this.gamePaused || !this.currentPiece) return;
+        
+        const currentTime = Date.now();
+        if (currentTime - this.lastMoveTime < this.moveDelay) return;
+        this.lastMoveTime = currentTime;
+        
+        switch(e.code) {
+            case 'ArrowLeft':
+                this.sounds.move();
+                this.movePiece(-1, 0);
+                break;
+            case 'ArrowRight':
+                this.sounds.move();
+                this.movePiece(1, 0);
+                break;
+            case 'ArrowDown':
+                this.sounds.drop();
+                this.movePiece(0, 1);
+                break;
+            case 'ArrowUp':
+                this.sounds.rotate();
+                this.rotatePiece();
+                break;
+            case 'Space':
+                this.sounds.drop();
+                this.hardDrop();
+                break;
+            case 'KeyC':
+                this.sounds.button();
+                this.holdCurrentPiece();
+                break;
+            case 'KeyP':
+                this.togglePause();
+                break;
+        }
+    }
+    
+    /**
      * Handle mobile input
      */
     handleMobileInput(action) {
