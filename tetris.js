@@ -606,15 +606,15 @@ class TetrisGame {
                 
                 // Master gain node to prevent clipping when sounds layer
                 this.masterGain = this.audioContext.createGain();
-                this.masterGain.gain.setValueAtTime(0.6, this.audioContext.currentTime); // Increased for better sound effect prominence
+                this.masterGain.gain.setValueAtTime(0.3, this.audioContext.currentTime); // Reduced to prevent clipping with high sound effect volumes
                 
-                // Dynamic range compressor for professional sound
+                // Dynamic range compressor for professional sound - optimized for high volumes
                 this.compressor = this.audioContext.createDynamicsCompressor();
-                this.compressor.threshold.setValueAtTime(-24, this.audioContext.currentTime);
-                this.compressor.knee.setValueAtTime(30, this.audioContext.currentTime);
-                this.compressor.ratio.setValueAtTime(12, this.audioContext.currentTime);
-                this.compressor.attack.setValueAtTime(0.003, this.audioContext.currentTime);
-                this.compressor.release.setValueAtTime(0.25, this.audioContext.currentTime);
+                this.compressor.threshold.setValueAtTime(-18, this.audioContext.currentTime); // Higher threshold for more compression
+                this.compressor.knee.setValueAtTime(40, this.audioContext.currentTime); // Wider knee for smoother compression
+                this.compressor.ratio.setValueAtTime(8, this.audioContext.currentTime); // Moderate ratio to prevent over-compression
+                this.compressor.attack.setValueAtTime(0.001, this.audioContext.currentTime); // Faster attack to catch peaks
+                this.compressor.release.setValueAtTime(0.1, this.audioContext.currentTime); // Faster release for better dynamics
                 
                 // Frequency spectrum analyzer for adaptive EQ
                 this.analyser = this.audioContext.createAnalyser();
@@ -705,8 +705,8 @@ class TetrisGame {
                 this.sidechainGain.gain.exponentialRampToValueAtTime(1, now + 0.2);
                 
                 // Also duck the master gain slightly for breathing effect
-                this.masterGain.gain.setValueAtTime(0.4, now);
-                this.masterGain.gain.linearRampToValueAtTime(0.6, now + 0.15);
+                this.masterGain.gain.setValueAtTime(0.2, now);
+                this.masterGain.gain.linearRampToValueAtTime(0.3, now + 0.15);
             };
             
             // Rhythmic gating effect
@@ -755,29 +755,29 @@ class TetrisGame {
             this.playMetronomeBeat = () => {
                 const beatInBar = this.beatCount % 4;
                 
-                // Ambient pad progression - A minor chord (reduced volume)
+                // Ambient pad progression - A minor chord (very low volume)
                 const padFreqs = [220, 330, 440, 660]; // A, E, A, E
                 const padFreq = padFreqs[beatInBar];
-                this.createAmbientBacking(padFreq, 2.0, 0.04);
+                this.createAmbientBacking(padFreq, 2.0, 0.02);
                 
-                // Gentle kick on beats 1 and 3 (reduced volume)
+                // Gentle kick on beats 1 and 3 (very low volume)
                 if (beatInBar === 0 || beatInBar === 2) {
-                    this.createAmbientBacking(60, 0.5, 0.06);
+                    this.createAmbientBacking(60, 0.5, 0.03);
                 }
                 
-                // Soft snare on beat 3 (reduced volume)
+                // Soft snare on beat 3 (very low volume)
                 if (beatInBar === 2) {
-                    this.createAmbientBacking(200, 0.3, 0.04);
+                    this.createAmbientBacking(200, 0.3, 0.02);
                 }
                 
-                // Gentle hi-hats on beats 2 and 4 (reduced volume)
+                // Gentle hi-hats on beats 2 and 4 (very low volume)
                 if (beatInBar === 1 || beatInBar === 3) {
-                    this.createAmbientBacking(800, 0.2, 0.025);
+                    this.createAmbientBacking(800, 0.2, 0.015);
                 }
                 
-                // Bass line - simple and clean (reduced volume)
+                // Bass line - simple and clean (very low volume)
                 const bassFreq = beatInBar === 0 ? 55 : (beatInBar === 2 ? 73.42 : 65.4); // A, D, C#
-                this.createAmbientBacking(bassFreq, 1.0, 0.05);
+                this.createAmbientBacking(bassFreq, 1.0, 0.025);
                 
                 // Track bars for simple progression
                 if (beatInBar === 0) {
@@ -3023,8 +3023,8 @@ class TetrisGame {
                     // Track action for momentum
                     this.trackAction('move');
                     
-                    // Increased volume for prominence
-                    const adaptiveVolume = 0.8 * this.classicalSystem.adaptiveVolume;
+                    // Much higher volume for maximum prominence
+                    const adaptiveVolume = 1.5 * this.classicalSystem.adaptiveVolume;
                     
                     // Simple clean tone with reverb
                     this.createCleanTone(freq, 0.3, adaptiveVolume);
@@ -3039,8 +3039,8 @@ class TetrisGame {
                     // Track action for momentum
                     this.trackAction('rotate');
                     
-                    // Increased volume with tension boost
-                    const adaptiveVolume = 1.0 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.3);
+                    // Much higher volume with tension boost
+                    const adaptiveVolume = 2.0 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.4);
                     
                     // Simple clean tone with reverb
                     this.createCleanTone(freq, 0.4, adaptiveVolume);
@@ -3055,8 +3055,8 @@ class TetrisGame {
                     // Track action for momentum
                     this.trackAction('drop');
                     
-                    // Increased volume with energy boost
-                    const adaptiveVolume = 1.2 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.4);
+                    // Much higher volume with energy boost
+                    const adaptiveVolume = 2.5 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.5);
                     
                     // Simple clean tone with reverb
                     this.createCleanTone(freq, 0.5, adaptiveVolume);
