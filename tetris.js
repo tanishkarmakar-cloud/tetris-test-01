@@ -597,6 +597,16 @@ class TetrisGame {
                 }
             };
             
+            // Brian Eno-inspired ambient and generative system
+            this.enoSystem = {
+                active: false,
+                generativeInterval: null,
+                melodyInterval: null,
+                droneLayers: [],
+                ambientTextures: [],
+                generativePatterns: []
+            };
+            
             this.startMetronome = () => {
                 if (this.metronomeInterval) return;
                 
@@ -654,6 +664,9 @@ class TetrisGame {
                 
                 // Start classical music system
                 this.startClassicalSystem();
+                
+                // Start Brian Eno-inspired ambient system
+                this.startEnoAmbientSystem();
             };
             
             this.stopMetronome = () => {
@@ -668,16 +681,36 @@ class TetrisGame {
                 this.stopOstinatoSystem();
                 this.stopCanonSystem();
                 this.stopClassicalSystem();
+                this.stopEnoAmbientSystem();
             };
             
-            // Start arpeggiator for melodic sequences
+            // Philip Glass-inspired arpeggiated patterns with additive processes
             this.startArpeggiator = () => {
                 if (this.arpeggiator.interval) return;
                 
-                const arpInterval = 60000 / (this.bpm * 2); // 16th notes
+                // Multiple overlapping arpeggio patterns (Glass signature)
+                this.arpeggiator.patterns = [
+                    [0, 2, 4, 2, 0, 1, 3, 1], // C major arpeggio
+                    [1, 3, 5, 3, 1, 2, 4, 2], // D minor arpeggio (offset)
+                    [2, 4, 6, 4, 2, 3, 5, 3], // E minor arpeggio (offset)
+                    [0, 1, 2, 3, 4, 5, 6, 7]  // Chromatic ascent
+                ];
+                this.arpeggiator.currentPattern = 0;
+                this.arpeggiator.step = 0;
+                this.arpeggiator.layer = 0;
+                
+                // Multiple layers with different timings (additive process)
+                const arpInterval = 60000 / (this.bpm * 3); // Faster for Glass feel
                 this.arpeggiator.interval = setInterval(() => {
-                    this.playArpeggiatorNote();
+                    this.playGlassArpeggio();
                 }, arpInterval);
+                
+                // Second layer with slight offset
+                setTimeout(() => {
+                    this.arpeggiator.layerInterval = setInterval(() => {
+                        this.playGlassArpeggioLayer();
+                    }, arpInterval);
+                }, arpInterval / 2);
             };
             
             this.stopArpeggiator = () => {
@@ -685,6 +718,78 @@ class TetrisGame {
                     clearInterval(this.arpeggiator.interval);
                     this.arpeggiator.interval = null;
                 }
+                if (this.arpeggiator.layerInterval) {
+                    clearInterval(this.arpeggiator.layerInterval);
+                    this.arpeggiator.layerInterval = null;
+                }
+            };
+            
+            // Philip Glass arpeggio patterns
+            this.playGlassArpeggio = () => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                const pattern = this.arpeggiator.patterns[this.arpeggiator.currentPattern];
+                const noteIndex = pattern[this.arpeggiator.step];
+                const baseFreq = 220; // A3
+                const freq = baseFreq * Math.pow(2, noteIndex / 12);
+                
+                // Glass-style additive synthesis
+                this.createGlassArpeggio(freq, 0.3, 0.1);
+                
+                this.arpeggiator.step = (this.arpeggiator.step + 1) % pattern.length;
+                
+                // Switch patterns occasionally (additive process)
+                if (this.arpeggiator.step === 0) {
+                    this.arpeggiator.currentPattern = (this.arpeggiator.currentPattern + 1) % this.arpeggiator.patterns.length;
+                }
+            };
+            
+            this.playGlassArpeggioLayer = () => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                const pattern = this.arpeggiator.patterns[(this.arpeggiator.currentPattern + 1) % this.arpeggiator.patterns.length];
+                const noteIndex = pattern[this.arpeggiator.step];
+                const baseFreq = 330; // E4 (higher register)
+                const freq = baseFreq * Math.pow(2, noteIndex / 12);
+                
+                // Second layer with different timbre
+                this.createGlassArpeggio(freq, 0.2, 0.05);
+            };
+            
+            // Glass-style additive synthesis
+            this.createGlassArpeggio = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                
+                // Multiple harmonics (additive synthesis)
+                const harmonics = [1, 2, 3, 4, 5]; // Fundamental + overtones
+                
+                harmonics.forEach((harmonic, index) => {
+                    const osc = this.audioContext.createOscillator();
+                    const gain = this.audioContext.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(frequency * harmonic, this.audioContext.currentTime);
+                    
+                    // Harmonic amplitude decreases with frequency
+                    const harmonicVolume = volume / (harmonic * 0.5);
+                    gain.gain.setValueAtTime(harmonicVolume, this.audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.masterGain);
+                    
+                    osc.start(this.audioContext.currentTime);
+                    osc.stop(this.audioContext.currentTime + duration);
+                });
+                
+                // Glass-style reverb
+                const reverb = this.createEtherealReverb();
+                gainNode.connect(reverb);
+                reverb.connect(this.masterGain);
             };
             
             this.playArpeggiatorNote = () => {
@@ -755,34 +860,86 @@ class TetrisGame {
             this.playMetronomeBeat = () => {
                 const beatInBar = this.beatCount % 4;
                 
-                // Ambient pad progression - A minor chord (balanced volume)
-                const padFreqs = [220, 330, 440, 660]; // A, E, A, E
-                const padFreq = padFreqs[beatInBar];
-                this.createAmbientBacking(padFreq, 2.0, 0.04);
+                // Minimalist Glass/Reich/Eno-inspired backing track
+                // Very subtle, evolving textures that complement the generative systems
                 
-                // Gentle kick on beats 1 and 3 (balanced volume)
-                if (beatInBar === 0 || beatInBar === 2) {
-                    this.createAmbientBacking(60, 0.5, 0.06);
+                // Glass-style arpeggiated foundation (very low volume)
+                if (beatInBar === 0) {
+                    this.createMinimalistPulse(220, 0.02); // A3 fundamental
                 }
                 
-                // Soft snare on beat 3 (balanced volume)
+                // Reich-style phasing texture (subtle)
                 if (beatInBar === 2) {
-                    this.createAmbientBacking(200, 0.3, 0.04);
+                    this.createMinimalistPulse(330, 0.015); // E4
                 }
                 
-                // Gentle hi-hats on beats 2 and 4 (balanced volume)
+                // Eno-style ambient texture (very subtle)
                 if (beatInBar === 1 || beatInBar === 3) {
-                    this.createAmbientBacking(800, 0.2, 0.03);
+                    this.createMinimalistPulse(440, 0.01); // A4
                 }
                 
-                // Bass line - simple and clean (balanced volume)
-                const bassFreq = beatInBar === 0 ? 55 : (beatInBar === 2 ? 73.42 : 65.4); // A, D, C#
-                this.createAmbientBacking(bassFreq, 1.0, 0.05);
+                // Minimalist bass pulse (Glass-style)
+                if (beatInBar === 0 || beatInBar === 2) {
+                    this.createMinimalistPulse(55, 0.025); // A1
+                }
                 
-                // Track bars for simple progression
+                // Track bars for progression
                 if (beatInBar === 0) {
                     this.barCount++;
+                    
+                    // Occasional Glass-style pattern shift
+                    if (this.barCount % 8 === 0) {
+                        this.addMinimalistVariation();
+                    }
                 }
+            };
+            
+            // Create minimalist pulse (Glass/Reich/Eno style)
+            this.createMinimalistPulse = (frequency, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                
+                // Pure sine wave for minimalist aesthetic
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                // Gentle filtering
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                
+                // Connect audio chain
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(this.masterGain);
+                
+                // Minimalist envelope - quick attack, long sustain, slow decay
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.1);
+                gainNode.gain.linearRampToValueAtTime(volume * 0.8, this.audioContext.currentTime + 0.5);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 1.5);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 1.5);
+            };
+            
+            // Add minimalist variation (Glass-style additive process)
+            this.addMinimalistVariation = () => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                // Glass-style pattern addition
+                const variations = [
+                    () => this.createMinimalistPulse(246.94, 0.015), // B3
+                    () => this.createMinimalistPulse(277.18, 0.012), // C#4
+                    () => this.createMinimalistPulse(311.13, 0.01),  // D#4
+                    () => this.createMinimalistPulse(349.23, 0.008)  // F4
+                ];
+                
+                const randomVariation = variations[Math.floor(Math.random() * variations.length)];
+                randomVariation();
             };
             
             // Add techno fill every 8 bars
@@ -1027,53 +1184,98 @@ class TetrisGame {
                 this.ambientPads.active = false;
             };
             
-            // Steve Reich-inspired phasing system
+            // Steve Reich-inspired phasing system with "It's Gonna Rain" techniques
             this.startPhasingSystem = () => {
                 if (this.phasingSystem.active) return;
                 
                 try {
-                    // Create multiple phasing patterns
-                    const patternCount = 4;
-                    const baseFreq = 440; // A4
+                    // Create multiple phasing patterns (Reich's signature technique)
+                    const patternCount = 6; // More patterns for richer phasing
+                    const baseFreq = 220; // A3 (lower, more fundamental)
+                    this.phasingSystem.pattern = [0, 2, 4, 2, 0, 1, 3, 1]; // Reich-style pattern
+                    this.phasingSystem.step = 0;
+                    this.phasingSystem.tempo = 120; // Reich's preferred tempo
                     
                     for (let i = 0; i < patternCount; i++) {
                         const oscillator = this.audioContext.createOscillator();
                         const gainNode = this.audioContext.createGain();
                         const filter = this.audioContext.createBiquadFilter();
+                        const lfo = this.audioContext.createOscillator();
+                        const lfoGain = this.audioContext.createGain();
                         
-                        // Each pattern has slightly different frequency
-                        const freq = baseFreq * (1 + i * 0.01);
+                        // Each pattern has slightly different frequency (Reich's phasing)
+                        const freq = baseFreq * (1 + i * 0.005); // More subtle frequency differences
                         oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
                         oscillator.type = 'sine';
                         
-                        // Filter for ethereal quality
+                        // Reich-style filtering with LFO modulation
                         filter.type = 'lowpass';
-                        filter.frequency.setValueAtTime(800 + i * 200, this.audioContext.currentTime);
-                        filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+                        filter.frequency.setValueAtTime(600 + i * 100, this.audioContext.currentTime);
+                        filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                        
+                        // LFO for subtle movement (Reich's evolving textures)
+                        lfo.frequency.setValueAtTime(0.1 + i * 0.02, this.audioContext.currentTime);
+                        lfo.type = 'sine';
+                        lfoGain.gain.setValueAtTime(freq * 0.05, this.audioContext.currentTime);
+                        
+                        // Connect LFO to filter
+                        lfo.connect(lfoGain);
+                        lfoGain.connect(filter.frequency);
                         
                         // Connect audio chain
                         oscillator.connect(filter);
                         filter.connect(gainNode);
-                        gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                        gainNode.connect(this.masterGain);
                         
                         // Very low volume for subtle effect
-                        gainNode.gain.setValueAtTime(0.03, this.audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0.02, this.audioContext.currentTime);
                         
-                        // Start oscillator
+                        // Start oscillators
                         oscillator.start();
+                        lfo.start();
                         
-                        this.phasingSystem.patterns.push({ oscillator, gainNode, filter, index: i });
+                        this.phasingSystem.patterns.push({ 
+                            oscillator, 
+                            gainNode, 
+                            filter, 
+                            lfo,
+                            index: i,
+                            phaseOffset: i * 0.1
+                        });
                     }
                     
-                    // Phasing interval - gradually shift patterns
+                    // Phasing interval - gradually shift patterns (Reich's signature)
                     this.phasingSystem.interval = setInterval(() => {
-                        this.updatePhasingPatterns();
-                    }, 50); // Update every 50ms for smooth phasing
+                        this.updateReichPhasing();
+                    }, 30); // Faster updates for smoother phasing
                     
                     this.phasingSystem.active = true;
                 } catch (error) {
                     console.warn('Phasing system error:', error);
                 }
+            };
+            
+            // Reich-style phasing update with pattern progression
+            this.updateReichPhasing = () => {
+                this.phasingSystem.phaseOffset += 0.001; // Very gradual phasing
+                if (this.phasingSystem.phaseOffset >= 1) {
+                    this.phasingSystem.phaseOffset = 0;
+                }
+                
+                // Update each pattern's volume and frequency based on phasing
+                this.phasingSystem.patterns.forEach((pattern, index) => {
+                    const phase = (this.phasingSystem.phaseOffset + pattern.phaseOffset) % 1;
+                    const volume = Math.sin(phase * Math.PI * 2) * 0.02 + 0.005;
+                    pattern.gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                    
+                    // Slight frequency modulation for Reich's evolving textures
+                    const freqMod = Math.sin(phase * Math.PI * 4) * 0.5;
+                    const baseFreq = 220 * (1 + index * 0.005);
+                    pattern.oscillator.frequency.setValueAtTime(baseFreq + freqMod, this.audioContext.currentTime);
+                });
+                
+                // Pattern progression (Reich's additive process)
+                this.phasingSystem.step = (this.phasingSystem.step + 1) % this.phasingSystem.pattern.length;
             };
             
             this.updatePhasingPatterns = () => {
@@ -1266,6 +1468,329 @@ class TetrisGame {
                 });
                 this.canonSystem.voices = [];
                 this.canonSystem.active = false;
+            };
+            
+            // Brian Eno-inspired ambient and generative systems
+            this.startEnoAmbientSystem = () => {
+                if (this.enoSystem.active) return;
+                
+                try {
+                    // Create generative ambient textures (Eno's "Music for Airports" style)
+                    this.enoSystem.generativeInterval = setInterval(() => {
+                        this.generateAmbientTexture();
+                    }, 3000 + Math.random() * 2000); // Random intervals (3-5 seconds)
+                    
+                    // Create evolving drone layers
+                    this.createEnoDrone();
+                    
+                    // Start generative melody system
+                    this.startGenerativeMelody();
+                    
+                    this.enoSystem.active = true;
+                } catch (error) {
+                    console.warn('Eno ambient system error:', error);
+                }
+            };
+            
+            this.generateAmbientTexture = () => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                // Generate random ambient textures (Eno's generative approach)
+                const textures = [
+                    () => this.createEnoAmbientPad(),
+                    () => this.createEnoBellTexture(),
+                    () => this.createEnoWindTexture(),
+                    () => this.createEnoHarmonicTexture()
+                ];
+                
+                const randomTexture = textures[Math.floor(Math.random() * textures.length)];
+                randomTexture();
+            };
+            
+            this.createEnoAmbientPad = () => {
+                const frequencies = [55, 73.42, 98, 130.81, 174.61]; // A minor chord with extensions
+                const randomFreq = frequencies[Math.floor(Math.random() * frequencies.length)];
+                const duration = 4 + Math.random() * 6; // 4-10 seconds
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                const lfo = this.audioContext.createOscillator();
+                const lfoGain = this.audioContext.createGain();
+                
+                // Very slow LFO for Eno's evolving textures
+                lfo.frequency.setValueAtTime(0.05 + Math.random() * 0.1, this.audioContext.currentTime);
+                lfo.type = 'sine';
+                lfoGain.gain.setValueAtTime(randomFreq * 0.1, this.audioContext.currentTime);
+                
+                // Gentle filtering
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(randomFreq * 4, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                
+                // Connect LFO to filter
+                lfo.connect(lfoGain);
+                lfoGain.connect(filter.frequency);
+                
+                // Main oscillator
+                oscillator.frequency.setValueAtTime(randomFreq, this.audioContext.currentTime);
+                oscillator.type = 'triangle';
+                
+                // Connect audio chain
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(this.masterGain);
+                
+                // Eno-style envelope - very slow attack and decay
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.01, this.audioContext.currentTime + 2);
+                gainNode.gain.linearRampToValueAtTime(0.005, this.audioContext.currentTime + duration * 0.7);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                
+                // Start oscillators
+                oscillator.start(this.audioContext.currentTime);
+                lfo.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + duration);
+                lfo.stop(this.audioContext.currentTime + duration);
+            };
+            
+            this.createEnoBellTexture = () => {
+                const frequencies = [440, 554.37, 659.25, 880]; // A, C#, E, A (bell-like)
+                const randomFreq = frequencies[Math.floor(Math.random() * frequencies.length)];
+                
+                // Create bell-like texture with multiple harmonics
+                for (let i = 0; i < 5; i++) {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    const harmonic = i + 1;
+                    const freq = randomFreq * harmonic;
+                    const volume = 0.02 / (harmonic * harmonic); // Harmonic series decay
+                    
+                    oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Bell-like filtering
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(10, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain);
+                    
+                    // Bell envelope - quick attack, long decay
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 3);
+                    
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + 3);
+                }
+            };
+            
+            this.createEnoWindTexture = () => {
+                // Create wind-like texture using filtered noise
+                const bufferSize = this.audioContext.sampleRate * 2;
+                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                // Generate pink noise
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 0.5);
+                }
+                
+                const noiseSource = this.audioContext.createBufferSource();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                const lfo = this.audioContext.createOscillator();
+                const lfoGain = this.audioContext.createGain();
+                
+                noiseSource.buffer = buffer;
+                noiseSource.loop = true;
+                
+                // Wind-like filtering with LFO
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(200, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                
+                lfo.frequency.setValueAtTime(0.1, this.audioContext.currentTime);
+                lfo.type = 'sine';
+                lfoGain.gain.setValueAtTime(100, this.audioContext.currentTime);
+                
+                // Connect LFO to filter
+                lfo.connect(lfoGain);
+                lfoGain.connect(filter.frequency);
+                
+                // Connect audio chain
+                noiseSource.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(this.masterGain);
+                
+                // Wind envelope
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.005, this.audioContext.currentTime + 1);
+                gainNode.gain.linearRampToValueAtTime(0.002, this.audioContext.currentTime + 4);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 6);
+                
+                // Start sources
+                noiseSource.start(this.audioContext.currentTime);
+                lfo.start(this.audioContext.currentTime);
+                noiseSource.stop(this.audioContext.currentTime + 6);
+                lfo.stop(this.audioContext.currentTime + 6);
+            };
+            
+            this.createEnoHarmonicTexture = () => {
+                // Create harmonic texture with multiple sine waves
+                const baseFreq = 55; // A1
+                const harmonics = [1, 2, 3, 4, 5, 6, 7, 8];
+                
+                harmonics.forEach((harmonic, index) => {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    const freq = baseFreq * harmonic;
+                    const volume = 0.01 / harmonic; // Harmonic series
+                    
+                    oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Gentle filtering
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(freq * 2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain);
+                    
+                    // Harmonic envelope
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.5);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.5, this.audioContext.currentTime + 3);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 5);
+                    
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + 5);
+                });
+            };
+            
+            this.createEnoDrone = () => {
+                // Create sustained drone layers (Eno's signature)
+                const droneFrequencies = [55, 110, 220]; // A1, A2, A3
+                
+                droneFrequencies.forEach((freq, index) => {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    
+                    // Very slow LFO for subtle movement
+                    lfo.frequency.setValueAtTime(0.02 + index * 0.01, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(freq * 0.05, this.audioContext.currentTime);
+                    
+                    // Gentle filtering
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(freq * 3, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                    
+                    // Connect LFO to filter
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(filter.frequency);
+                    
+                    // Main oscillator
+                    oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain);
+                    
+                    // Drone envelope - very slow attack
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.008, this.audioContext.currentTime + 3);
+                    
+                    // Start oscillators
+                    oscillator.start(this.audioContext.currentTime);
+                    lfo.start(this.audioContext.currentTime);
+                    
+                    this.enoSystem.droneLayers.push({ oscillator, lfo, gainNode });
+                });
+            };
+            
+            this.startGenerativeMelody = () => {
+                // Generate random melodic fragments (Eno's generative approach)
+                this.enoSystem.melodyInterval = setInterval(() => {
+                    this.generateMelodicFragment();
+                }, 8000 + Math.random() * 4000); // 8-12 seconds
+            };
+            
+            this.generateMelodicFragment = () => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                const scale = [220, 246.94, 277.18, 311.13, 349.23, 392.00, 440.00, 493.88]; // A minor scale
+                const fragmentLength = 3 + Math.floor(Math.random() * 4); // 3-6 notes
+                
+                for (let i = 0; i < fragmentLength; i++) {
+                    setTimeout(() => {
+                        const randomNote = scale[Math.floor(Math.random() * scale.length)];
+                        this.createEnoMelodicNote(randomNote);
+                    }, i * 300 + Math.random() * 200); // Slightly random timing
+                }
+            };
+            
+            this.createEnoMelodicNote = (frequency) => {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                // Gentle filtering
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                
+                // Connect audio chain
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(this.masterGain);
+                
+                // Melodic note envelope
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.015, this.audioContext.currentTime + 0.1);
+                gainNode.gain.linearRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 2);
+            };
+            
+            this.stopEnoAmbientSystem = () => {
+                if (this.enoSystem.generativeInterval) {
+                    clearInterval(this.enoSystem.generativeInterval);
+                    this.enoSystem.generativeInterval = null;
+                }
+                if (this.enoSystem.melodyInterval) {
+                    clearInterval(this.enoSystem.melodyInterval);
+                    this.enoSystem.melodyInterval = null;
+                }
+                this.enoSystem.droneLayers.forEach(({ oscillator, lfo }) => {
+                    try {
+                        oscillator.stop();
+                        lfo.stop();
+                    } catch (e) {}
+                });
+                this.enoSystem.droneLayers = [];
+                this.enoSystem.active = false;
             };
             
             // Classical music system with proper harmony
