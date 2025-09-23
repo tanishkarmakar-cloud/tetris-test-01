@@ -499,6 +499,40 @@ class TetrisGame {
                 interval: null
             };
             
+            // Binaural beats for brainwave entrainment
+            this.binauralBeats = {
+                active: false,
+                baseFreq: 40, // Alpha waves (8-12 Hz)
+                beatFreq: 10, // Binaural beat frequency
+                leftOsc: null,
+                rightOsc: null,
+                interval: null
+            };
+            
+            // Spatial audio system
+            this.spatialAudio = {
+                panner: null,
+                distance: 1,
+                panning: 0,
+                elevation: 0
+            };
+            
+            // Granular synthesis
+            this.granular = {
+                active: false,
+                grainSize: 0.1,
+                overlap: 0.5,
+                pitch: 1,
+                interval: null
+            };
+            
+            // Ambient pads
+            this.ambientPads = {
+                active: false,
+                oscillators: [],
+                interval: null
+            };
+            
             this.startMetronome = () => {
                 if (this.metronomeInterval) return;
                 
@@ -515,6 +549,15 @@ class TetrisGame {
                 
                 // Start arpeggiator
                 this.startArpeggiator();
+                
+                // Start binaural beats
+                this.startBinauralBeats();
+                
+                // Start ambient pads
+                this.startAmbientPads();
+                
+                // Initialize spatial audio
+                this.initSpatialAudio();
             };
             
             this.stopMetronome = () => {
@@ -523,6 +566,8 @@ class TetrisGame {
                     this.metronomeInterval = null;
                 }
                 this.stopArpeggiator();
+                this.stopBinauralBeats();
+                this.stopAmbientPads();
             };
             
             // Start arpeggiator for melodic sequences
@@ -558,6 +603,49 @@ class TetrisGame {
                 const now = this.audioContext.currentTime;
                 this.sidechainGain.gain.setValueAtTime(0.3, now);
                 this.sidechainGain.gain.exponentialRampToValueAtTime(1, now + 0.2);
+            };
+            
+            // Rhythmic gating effect
+            this.addRhythmicGate = (frequency, duration, volume = 0.1) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const gateGain = this.audioContext.createGain();
+                    const gateOsc = this.audioContext.createOscillator();
+                    
+                    // Gate oscillator (stutter pattern)
+                    gateOsc.frequency.setValueAtTime(16, this.audioContext.currentTime); // 16th note gates
+                    gateOsc.type = 'square';
+                    
+                    // Gate gain control
+                    gateGain.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gateGain.gain.linearRampToValueAtTime(1, this.audioContext.currentTime + 0.001);
+                    
+                    // Connect gate
+                    gateOsc.connect(gateGain);
+                    gateGain.connect(gainNode.gain);
+                    
+                    // Main oscillator
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sawtooth';
+                    
+                    // Connect audio chain
+            oscillator.connect(gainNode);
+                    gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                    
+                    // Envelope
+                    gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    
+                    oscillator.start(this.audioContext.currentTime);
+                    gateOsc.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + duration);
+                    gateOsc.stop(this.audioContext.currentTime + duration);
+                } catch (error) {
+                    console.warn('Rhythmic gate error:', error);
+                }
             };
             
             this.playMetronomeBeat = () => {
@@ -647,6 +735,150 @@ class TetrisGame {
                 }, 2000);
             };
             
+            // Binaural beats for brainwave entrainment
+            this.startBinauralBeats = () => {
+                if (this.binauralBeats.active) return;
+                
+                try {
+                    // Create stereo panner for binaural effect
+                    const panner = this.audioContext.createStereoPanner();
+                    panner.pan.setValueAtTime(-1, this.audioContext.currentTime); // Left ear
+                    
+                    // Left ear oscillator
+                    this.binauralBeats.leftOsc = this.audioContext.createOscillator();
+                    this.binauralBeats.leftOsc.frequency.setValueAtTime(this.binauralBeats.baseFreq, this.audioContext.currentTime);
+                    this.binauralBeats.leftOsc.type = 'sine';
+                    
+                    // Right ear oscillator (slightly different frequency)
+                    this.binauralBeats.rightOsc = this.audioContext.createOscillator();
+                    this.binauralBeats.rightOsc.frequency.setValueAtTime(this.binauralBeats.baseFreq + this.binauralBeats.beatFreq, this.audioContext.currentTime);
+                    this.binauralBeats.rightOsc.type = 'sine';
+                    
+                    // Gain nodes for volume control
+                    const leftGain = this.audioContext.createGain();
+                    const rightGain = this.audioContext.createGain();
+                    leftGain.gain.setValueAtTime(0.05, this.audioContext.currentTime);
+                    rightGain.gain.setValueAtTime(0.05, this.audioContext.currentTime);
+                    
+                    // Connect to stereo output
+                    this.binauralBeats.leftOsc.connect(leftGain);
+                    this.binauralBeats.rightOsc.connect(rightGain);
+                    leftGain.connect(this.audioContext.destination);
+                    rightGain.connect(this.audioContext.destination);
+                    
+                    // Start oscillators
+                    this.binauralBeats.leftOsc.start();
+                    this.binauralBeats.rightOsc.start();
+                    this.binauralBeats.active = true;
+                    
+                    // Gradually change beat frequency for entrainment
+                    this.binauralBeats.interval = setInterval(() => {
+                        const newBeatFreq = 8 + Math.sin(Date.now() * 0.001) * 4; // 4-12 Hz range
+                        this.binauralBeats.rightOsc.frequency.setValueAtTime(
+                            this.binauralBeats.baseFreq + newBeatFreq, 
+                            this.audioContext.currentTime
+                        );
+                    }, 100);
+                } catch (error) {
+                    console.warn('Binaural beats error:', error);
+                }
+            };
+            
+            this.stopBinauralBeats = () => {
+                if (this.binauralBeats.leftOsc) {
+                    this.binauralBeats.leftOsc.stop();
+                    this.binauralBeats.leftOsc = null;
+                }
+                if (this.binauralBeats.rightOsc) {
+                    this.binauralBeats.rightOsc.stop();
+                    this.binauralBeats.rightOsc = null;
+                }
+                if (this.binauralBeats.interval) {
+                    clearInterval(this.binauralBeats.interval);
+                    this.binauralBeats.interval = null;
+                }
+                this.binauralBeats.active = false;
+            };
+            
+            // Spatial audio system
+            this.initSpatialAudio = () => {
+                try {
+                    this.spatialAudio.panner = this.audioContext.createPanner();
+                    this.spatialAudio.panner.panningModel = 'HRTF';
+                    this.spatialAudio.panner.distanceModel = 'exponential';
+                    this.spatialAudio.panner.refDistance = 1;
+                    this.spatialAudio.panner.maxDistance = 10;
+                    this.spatialAudio.panner.rolloffFactor = 1;
+                    this.spatialAudio.panner.coneInnerAngle = 360;
+                    this.spatialAudio.panner.coneOuterAngle = 0;
+                    this.spatialAudio.panner.coneOuterGain = 0;
+                } catch (error) {
+                    console.warn('Spatial audio error:', error);
+                }
+            };
+            
+            // Ambient pads for atmospheric background
+            this.startAmbientPads = () => {
+                if (this.ambientPads.active) return;
+                
+                try {
+                    const padFrequencies = [55, 73.42, 98, 130.81]; // A minor chord
+                    
+                    padFrequencies.forEach((freq, index) => {
+                        const oscillator = this.audioContext.createOscillator();
+                        const gainNode = this.audioContext.createGain();
+                        const filter = this.audioContext.createBiquadFilter();
+                        const lfo = this.audioContext.createOscillator();
+                        const lfoGain = this.audioContext.createGain();
+                        
+                        // LFO for evolving sound
+                        lfo.frequency.setValueAtTime(0.1 + index * 0.05, this.audioContext.currentTime);
+                        lfo.type = 'sine';
+                        lfoGain.gain.setValueAtTime(freq * 0.1, this.audioContext.currentTime);
+                        
+                        // Filter setup
+                        filter.type = 'lowpass';
+                        filter.frequency.setValueAtTime(freq * 4, this.audioContext.currentTime);
+                        filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                        
+                        // Connect LFO to filter
+                        lfo.connect(lfoGain);
+                        lfoGain.connect(filter.frequency);
+                        
+                        // Main audio chain
+                        oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                        oscillator.type = 'triangle';
+                        oscillator.connect(filter);
+                        filter.connect(gainNode);
+                        gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                        
+                        // Very low volume for ambient effect
+                        gainNode.gain.setValueAtTime(0.02, this.audioContext.currentTime);
+                        
+                        // Start oscillators
+                        oscillator.start();
+                        lfo.start();
+                        
+                        this.ambientPads.oscillators.push({ oscillator, lfo, gainNode });
+                    });
+                    
+                    this.ambientPads.active = true;
+                } catch (error) {
+                    console.warn('Ambient pads error:', error);
+                }
+            };
+            
+            this.stopAmbientPads = () => {
+                this.ambientPads.oscillators.forEach(({ oscillator, lfo, gainNode }) => {
+                    try {
+                        oscillator.stop();
+                        lfo.stop();
+                    } catch (e) {}
+                });
+                this.ambientPads.oscillators = [];
+                this.ambientPads.active = false;
+            };
+            
             // Create arpeggiator sound with FM synthesis
             this.createArpeggiatorSound = (frequency, duration, type = 'triangle', volume = 0.1) => {
                 if (!this.audioInitialized || !this.audioContext) return;
@@ -715,8 +947,8 @@ class TetrisGame {
                     
                     // Set oscillator properties
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-                    oscillator.type = type;
-                    
+            oscillator.type = type;
+            
                     // Add filter for techno character
                     filter.type = 'lowpass';
                     filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
@@ -731,6 +963,98 @@ class TetrisGame {
                     oscillator.stop(this.audioContext.currentTime + duration);
                 } catch (error) {
                     console.warn('Metronome audio error:', error);
+                }
+            };
+            
+            // Granular synthesis for textural sounds
+            this.createGranularSound = (frequency, duration, volume = 0.1) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const grainCount = Math.floor(duration / this.granular.grainSize);
+                    
+                    for (let i = 0; i < grainCount; i++) {
+                        setTimeout(() => {
+                            const oscillator = this.audioContext.createOscillator();
+                            const gainNode = this.audioContext.createGain();
+                            const filter = this.audioContext.createBiquadFilter();
+                            
+                            // Random frequency variation for granular texture
+                            const freqVariation = frequency + (Math.random() - 0.5) * frequency * 0.1;
+                            oscillator.frequency.setValueAtTime(freqVariation, this.audioContext.currentTime);
+                            oscillator.type = 'sawtooth';
+                            
+                            // Filter for texture
+                            filter.type = 'bandpass';
+                            filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+                            filter.Q.setValueAtTime(10, this.audioContext.currentTime);
+                            
+                            // Granular envelope
+                            const grainDuration = this.granular.grainSize * (0.5 + Math.random() * 0.5);
+                            gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.3, this.audioContext.currentTime + 0.001);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + grainDuration);
+                            
+                            // Connect audio chain
+                            oscillator.connect(filter);
+                            filter.connect(gainNode);
+                            gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                            
+                            oscillator.start(this.audioContext.currentTime);
+                            oscillator.stop(this.audioContext.currentTime + grainDuration);
+                        }, i * this.granular.grainSize * 1000 * this.granular.overlap);
+                    }
+                } catch (error) {
+                    console.warn('Granular synthesis error:', error);
+                }
+            };
+            
+            // Spectral filtering and formant synthesis
+            this.createSpectralSound = (frequency, duration, volume = 0.1) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    // Multiple formant filters for vocal-like quality
+                    const formant1 = this.audioContext.createBiquadFilter();
+                    const formant2 = this.audioContext.createBiquadFilter();
+                    const formant3 = this.audioContext.createBiquadFilter();
+                    
+                    // Formant frequencies (vowel-like)
+                    formant1.type = 'bandpass';
+                    formant1.frequency.setValueAtTime(800, this.audioContext.currentTime);
+                    formant1.Q.setValueAtTime(5, this.audioContext.currentTime);
+                    
+                    formant2.type = 'bandpass';
+                    formant2.frequency.setValueAtTime(1200, this.audioContext.currentTime);
+                    formant2.Q.setValueAtTime(5, this.audioContext.currentTime);
+                    
+                    formant3.type = 'bandpass';
+                    formant3.frequency.setValueAtTime(2500, this.audioContext.currentTime);
+                    formant3.Q.setValueAtTime(5, this.audioContext.currentTime);
+                    
+                    // Connect formant chain
+                    oscillator.connect(formant1);
+                    formant1.connect(formant2);
+                    formant2.connect(formant3);
+                    formant3.connect(gainNode);
+                    gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                    
+                    // Set oscillator properties
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sawtooth';
+                    
+                    // Envelope
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + duration);
+                } catch (error) {
+                    console.warn('Spectral synthesis error:', error);
                 }
             };
             
@@ -790,24 +1114,31 @@ class TetrisGame {
                 move: () => {
                     const freq = this.getNextTechnoFreq();
                     this.createTechnoSound(freq, 0.2, 'square', 0.15);
+                    this.createGranularSound(freq * 2, 0.1, 0.05); // Add granular texture
                     this.triggerSidechain();
                 },
                 rotate: () => {
                     const freq = this.getNextTechnoFreq() * 1.5;
                     this.createTechnoSound(freq, 0.25, 'triangle', 0.18);
+                    this.createSpectralSound(freq * 1.5, 0.15, 0.08); // Add spectral character
                     this.triggerSidechain();
                 },
                 drop: () => {
                     const freq = this.getNextTechnoFreq() * 0.5;
                     this.createTechnoSound(freq, 0.3, 'sawtooth', 0.2);
+                    this.createGranularSound(freq * 0.5, 0.2, 0.1); // Add granular texture
                     this.triggerSidechain();
                 },
             lineClear: () => {
-                    // Layered chord progression
+                    // Layered chord progression with spectral enhancement
                     this.createTechnoSound(400, 0.4, 'triangle', 0.25);
+                    this.createSpectralSound(400, 0.3, 0.1);
                     setTimeout(() => this.createTechnoSound(500, 0.4, 'triangle', 0.25), 50);
+                    setTimeout(() => this.createSpectralSound(500, 0.3, 0.1), 50);
                     setTimeout(() => this.createTechnoSound(600, 0.4, 'triangle', 0.25), 100);
+                    setTimeout(() => this.createSpectralSound(600, 0.3, 0.1), 100);
                     setTimeout(() => this.createTechnoSound(800, 0.4, 'triangle', 0.25), 150);
+                    setTimeout(() => this.createSpectralSound(800, 0.3, 0.1), 150);
                     this.triggerSidechain();
             },
             gameOver: () => {
@@ -824,12 +1155,25 @@ class TetrisGame {
                     this.createTechnoSound(600, 0.4, 'triangle', 0.25);
                 },
                 tetris: () => {
-                    // Special Tetris layered sound
+                    // Special Tetris layered sound with rhythmic gate
                     this.createTechnoSound(400, 0.3, 'triangle', 0.3);
-                    setTimeout(() => this.createTechnoSound(500, 0.3, 'triangle', 0.3), 50);
-                    setTimeout(() => this.createTechnoSound(600, 0.3, 'triangle', 0.3), 100);
-                    setTimeout(() => this.createTechnoSound(800, 0.3, 'triangle', 0.3), 150);
-                    setTimeout(() => this.createTechnoSound(1000, 0.3, 'triangle', 0.3), 200);
+                    this.addRhythmicGate(400 * 2, 0.2, 0.1);
+                    setTimeout(() => {
+                        this.createTechnoSound(500, 0.3, 'triangle', 0.3);
+                        this.addRhythmicGate(500 * 2, 0.2, 0.1);
+                    }, 50);
+                    setTimeout(() => {
+                        this.createTechnoSound(600, 0.3, 'triangle', 0.3);
+                        this.addRhythmicGate(600 * 2, 0.2, 0.1);
+                    }, 100);
+                    setTimeout(() => {
+                        this.createTechnoSound(800, 0.3, 'triangle', 0.3);
+                        this.addRhythmicGate(800 * 2, 0.2, 0.1);
+                    }, 150);
+                    setTimeout(() => {
+                        this.createTechnoSound(1000, 0.3, 'triangle', 0.3);
+                        this.addRhythmicGate(1000 * 2, 0.2, 0.1);
+                    }, 200);
                 },
                 startMetronome: () => this.startMetronome(),
                 stopMetronome: () => this.stopMetronome()
