@@ -582,7 +582,19 @@ class TetrisGame {
                 phraseLength: 8, // 8-beat phrases
                 phraseCount: 0,
                 intensity: 0, // Progressive intensity
-                level: 1 // Current level for progression
+                level: 1, // Current level for progression
+                momentum: 0, // Audio momentum (0-1)
+                tension: 0, // Musical tension (0-1)
+                energy: 0, // Overall energy level (0-1)
+                adaptiveTempo: 128, // Adaptive BPM
+                adaptiveVolume: 1.0, // Adaptive volume scaling
+                frequencySpectrum: {
+                    bass: 0.8,    // 60-250 Hz
+                    lowMid: 0.6,  // 250-2000 Hz
+                    mid: 0.7,     // 2000-4000 Hz
+                    highMid: 0.5, // 4000-8000 Hz
+                    treble: 0.3   // 8000+ Hz
+                }
             };
             
             this.startMetronome = () => {
@@ -595,10 +607,29 @@ class TetrisGame {
                 // Master gain node to prevent clipping when sounds layer
                 this.masterGain = this.audioContext.createGain();
                 this.masterGain.gain.setValueAtTime(0.7, this.audioContext.currentTime); // Prevent clipping
-                this.masterGain.connect(this.audioContext.destination);
+                
+                // Dynamic range compressor for professional sound
+                this.compressor = this.audioContext.createDynamicsCompressor();
+                this.compressor.threshold.setValueAtTime(-24, this.audioContext.currentTime);
+                this.compressor.knee.setValueAtTime(30, this.audioContext.currentTime);
+                this.compressor.ratio.setValueAtTime(12, this.audioContext.currentTime);
+                this.compressor.attack.setValueAtTime(0.003, this.audioContext.currentTime);
+                this.compressor.release.setValueAtTime(0.25, this.audioContext.currentTime);
+                
+                // Frequency spectrum analyzer for adaptive EQ
+                this.analyser = this.audioContext.createAnalyser();
+                this.analyser.fftSize = 2048;
+                this.analyser.smoothingTimeConstant = 0.8;
+                
+                // Connect audio chain: Master Gain -> Compressor -> Analyser -> Destination
+                this.masterGain.connect(this.compressor);
+                this.compressor.connect(this.analyser);
+                this.analyser.connect(this.audioContext.destination);
                 this.sidechainGain.gain.setValueAtTime(1, this.audioContext.currentTime);
                 
-                const beatInterval = 60000 / this.bpm; // Convert BPM to milliseconds
+                // Use adaptive tempo for dynamic BPM
+                const adaptiveBPM = this.classicalSystem ? this.classicalSystem.adaptiveTempo : this.bpm;
+                const beatInterval = 60000 / adaptiveBPM; // Convert BPM to milliseconds
                 this.metronomeInterval = setInterval(() => {
                     this.playMetronomeBeat();
                     this.beatCount++;
@@ -1537,6 +1568,149 @@ class TetrisGame {
                 this.classicalSystem.active = false;
             };
             
+            // Apply adaptive EQ based on frequency spectrum and current energy
+            this.applyAdaptiveEQ = (filter, frequency) => {
+                if (!this.classicalSystem) return;
+                
+                const spectrum = this.classicalSystem.frequencySpectrum;
+                const energy = this.classicalSystem.energy;
+                const tension = this.classicalSystem.tension;
+                
+                // Determine frequency band
+                let bandMultiplier = 1;
+                if (frequency < 250) {
+                    bandMultiplier = spectrum.bass + (energy * 0.3);
+                } else if (frequency < 2000) {
+                    bandMultiplier = spectrum.lowMid + (tension * 0.2);
+                } else if (frequency < 4000) {
+                    bandMultiplier = spectrum.mid + (energy * 0.4);
+                } else if (frequency < 8000) {
+                    bandMultiplier = spectrum.highMid + (tension * 0.3);
+                } else {
+                    bandMultiplier = spectrum.treble + (energy * 0.2);
+                }
+                
+                // Apply adaptive filtering
+                const baseFreq = frequency * 3;
+                const adaptiveFreq = baseFreq * (0.5 + bandMultiplier * 0.5);
+                const adaptiveQ = 1 + (tension * 2);
+                
+                filter.frequency.setValueAtTime(adaptiveFreq, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(adaptiveQ, this.audioContext.currentTime);
+            };
+            
+            // Update audio momentum and energy based on gameplay
+            this.updateAudioMomentum = () => {
+                if (!this.classicalSystem) return;
+                
+                // Calculate momentum based on recent actions
+                const recentActions = this.recentActions || [];
+                const now = Date.now();
+                const recentThreshold = 2000; // 2 seconds
+                
+                // Count recent actions
+                const recentCount = recentActions.filter(action => now - action.time < recentThreshold).length;
+                
+                // Update momentum (0-1)
+                this.classicalSystem.momentum = Math.min(1, recentCount / 10);
+                
+                // Update energy based on momentum and level
+                this.classicalSystem.energy = (this.classicalSystem.momentum * 0.6) + (this.classicalSystem.intensity * 0.4);
+                
+                // Update tension based on game state
+                const linesNearTop = this.getLinesNearTop();
+                this.classicalSystem.tension = Math.min(1, linesNearTop / 5);
+                
+                // Update adaptive tempo
+                const baseTempo = 128;
+                const tempoBoost = this.classicalSystem.energy * 20;
+                this.classicalSystem.adaptiveTempo = baseTempo + tempoBoost;
+                
+                // Update adaptive volume
+                const baseVolume = 0.7;
+                const volumeBoost = this.classicalSystem.energy * 0.3;
+                this.classicalSystem.adaptiveVolume = baseVolume + volumeBoost;
+            };
+            
+            // Get number of lines near the top for tension calculation
+            this.getLinesNearTop = () => {
+                if (!this.board) return 0;
+                let linesNearTop = 0;
+                for (let y = 0; y < 5; y++) {
+                    for (let x = 0; x < this.BOARD_WIDTH; x++) {
+                        if (this.board[y][x] !== 0) {
+                            linesNearTop++;
+                            break;
+                        }
+                    }
+                }
+                return linesNearTop;
+            };
+            
+            // Track recent actions for momentum calculation
+            this.trackAction = (actionType) => {
+                if (!this.recentActions) this.recentActions = [];
+                this.recentActions.push({
+                    type: actionType,
+                    time: Date.now()
+                });
+                
+                // Keep only recent actions
+                this.recentActions = this.recentActions.filter(action => Date.now() - action.time < 5000);
+                
+                // Update momentum
+                this.updateAudioMomentum();
+            };
+            
+            // Update master gain with adaptive volume
+            this.updateMasterGain = () => {
+                if (!this.masterGain || !this.classicalSystem) return;
+                
+                const now = this.audioContext.currentTime;
+                const targetVolume = this.classicalSystem.adaptiveVolume;
+                
+                // Smooth transition to adaptive volume
+                this.masterGain.gain.linearRampToValueAtTime(targetVolume, now + 0.1);
+            };
+            
+            // Update frequency spectrum based on current audio
+            this.updateFrequencySpectrum = () => {
+                if (!this.analyser || !this.classicalSystem) return;
+                
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                this.analyser.getByteFrequencyData(dataArray);
+                
+                // Analyze frequency bands
+                const bass = this.getFrequencyBand(dataArray, 0, 10); // 0-250 Hz
+                const lowMid = this.getFrequencyBand(dataArray, 10, 40); // 250-2000 Hz
+                const mid = this.getFrequencyBand(dataArray, 40, 80); // 2000-4000 Hz
+                const highMid = this.getFrequencyBand(dataArray, 80, 160); // 4000-8000 Hz
+                const treble = this.getFrequencyBand(dataArray, 160, 256); // 8000+ Hz
+                
+                // Update spectrum with smoothing
+                const smoothing = 0.8;
+                this.classicalSystem.frequencySpectrum.bass = 
+                    (this.classicalSystem.frequencySpectrum.bass * smoothing) + (bass * (1 - smoothing));
+                this.classicalSystem.frequencySpectrum.lowMid = 
+                    (this.classicalSystem.frequencySpectrum.lowMid * smoothing) + (lowMid * (1 - smoothing));
+                this.classicalSystem.frequencySpectrum.mid = 
+                    (this.classicalSystem.frequencySpectrum.mid * smoothing) + (mid * (1 - smoothing));
+                this.classicalSystem.frequencySpectrum.highMid = 
+                    (this.classicalSystem.frequencySpectrum.highMid * smoothing) + (highMid * (1 - smoothing));
+                this.classicalSystem.frequencySpectrum.treble = 
+                    (this.classicalSystem.frequencySpectrum.treble * smoothing) + (treble * (1 - smoothing));
+            };
+            
+            // Get average amplitude for a frequency band
+            this.getFrequencyBand = (dataArray, start, end) => {
+                let sum = 0;
+                for (let i = start; i < end && i < dataArray.length; i++) {
+                    sum += dataArray[i];
+                }
+                return sum / (end - start) / 255; // Normalize to 0-1
+            };
+            
             // Create harmonious note - simple, clean, and musical with natural layering
             this.createHarmoniousNote = (frequency, duration, volume, type = 'sine') => {
                 if (!this.audioInitialized || !this.audioContext) return;
@@ -1561,6 +1735,9 @@ class TetrisGame {
                     filter.connect(gainNode);
                     gainNode.connect(reverb.convolver);
                     reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Apply adaptive frequency response based on current spectrum
+                    this.applyAdaptiveEQ(filter, frequency);
                     
                     // Natural envelope with extended fade for layering
                     const now = this.audioContext.currentTime;
@@ -1817,7 +1994,13 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[1]; // Use middle voice of current chord
                     
-                    this.createHarmoniousNote(freq, 0.2, 0.4, 'sine');
+                    // Track action for momentum
+                    this.trackAction('move');
+                    
+                    // Adaptive volume based on energy and tension
+                    const adaptiveVolume = 0.4 * this.classicalSystem.adaptiveVolume;
+                    
+                    this.createHarmoniousNote(freq, 0.2, adaptiveVolume, 'sine');
                     this.triggerSidechain();
                 },
                 rotate: () => {
@@ -1825,7 +2008,13 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[2]; // Use top voice of current chord
                     
-                    this.createHarmoniousNote(freq, 0.25, 0.5, 'triangle');
+                    // Track action for momentum
+                    this.trackAction('rotate');
+                    
+                    // Adaptive volume with tension boost
+                    const adaptiveVolume = 0.5 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.3);
+                    
+                    this.createHarmoniousNote(freq, 0.25, adaptiveVolume, 'triangle');
                     this.triggerSidechain();
                 },
                 drop: () => {
@@ -1833,15 +2022,31 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[0]; // Bass note
                     
-                    this.createHarmoniousNote(freq, 0.3, 0.6, 'sine');
+                    // Track action for momentum
+                    this.trackAction('drop');
+                    
+                    // Adaptive volume with energy boost
+                    const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.4);
+                    
+                    this.createHarmoniousNote(freq, 0.3, adaptiveVolume, 'sine');
                     this.triggerSidechain();
                 },
             lineClear: () => {
                     // Progressive line clear - builds harmoniously
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                    
+                    // Track action for momentum
+                    this.trackAction('lineClear');
+                    
+                    // Boost energy and momentum on line clear
+                    this.classicalSystem.energy = Math.min(1, this.classicalSystem.energy + 0.2);
+                    this.classicalSystem.momentum = Math.min(1, this.classicalSystem.momentum + 0.3);
+                    
                     currentChord.forEach((freq, index) => {
                         setTimeout(() => {
-                            this.createHarmoniousNote(freq, 0.4, 0.6, 'triangle');
+                            // Adaptive volume with celebration boost
+                            const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.5);
+                            this.createHarmoniousNote(freq, 0.4, adaptiveVolume, 'triangle');
                         }, index * 100); // Faster, more rhythmic
                     });
                     this.triggerSidechain();
@@ -2533,6 +2738,12 @@ class TetrisGame {
         }
         
         this.draw();
+        
+        // Update audio systems
+        this.updateAudioMomentum();
+        this.updateMasterGain();
+        this.updateFrequencySpectrum();
+        
         this.gameLoopId = requestAnimationFrame(() => this.gameLoop());
     }
     
