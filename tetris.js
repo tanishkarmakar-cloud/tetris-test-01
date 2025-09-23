@@ -560,6 +560,29 @@ class TetrisGame {
                 interval: null
             };
             
+            // Classical music system
+            this.classicalSystem = {
+                active: false,
+                key: 'A minor', // Tonal center
+                scale: [220, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00], // A minor scale
+                chordProgressions: [
+                    [220, 261.63, 329.63], // Am (i)
+                    [246.94, 293.66, 349.23], // Bdim (ii°)
+                    [261.63, 329.63, 392.00], // C (III)
+                    [293.66, 349.23, 440.00], // Dm (iv)
+                    [329.63, 392.00, 493.88], // E (V)
+                    [349.23, 440.00, 523.25], // F (VI)
+                    [392.00, 493.88, 587.33]  // G (VII)
+                ],
+                currentChord: 0,
+                theme: [220, 261.63, 329.63, 392.00, 349.23, 329.63, 261.63, 220], // Main theme
+                themeIndex: 0,
+                interval: null,
+                dynamics: 0.5, // Current dynamic level
+                phraseLength: 8, // 8-beat phrases
+                phraseCount: 0
+            };
+            
             this.startMetronome = () => {
                 if (this.metronomeInterval) return;
                 
@@ -590,6 +613,9 @@ class TetrisGame {
                 this.startPhasingSystem();
                 this.startOstinatoSystem();
                 this.startCanonSystem();
+                
+                // Start classical music system
+                this.startClassicalSystem();
             };
             
             this.stopMetronome = () => {
@@ -603,6 +629,7 @@ class TetrisGame {
                 this.stopPhasingSystem();
                 this.stopOstinatoSystem();
                 this.stopCanonSystem();
+                this.stopClassicalSystem();
             };
             
             // Start arpeggiator for melodic sequences
@@ -1232,6 +1259,190 @@ class TetrisGame {
                 this.canonSystem.active = false;
             };
             
+            // Classical music system with proper harmony
+            this.startClassicalSystem = () => {
+                if (this.classicalSystem.active) return;
+                
+                try {
+                    // Create harmonic foundation
+                    this.createHarmonicFoundation();
+                    
+                    // Start thematic development
+                    this.startThematicDevelopment();
+                    
+                    // Start dynamic phrasing
+                    this.startDynamicPhrasing();
+                    
+                    this.classicalSystem.active = true;
+                } catch (error) {
+                    console.warn('Classical system error:', error);
+                }
+            };
+            
+            this.createHarmonicFoundation = () => {
+                // Create sustained chord tones for harmonic foundation
+                const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                
+                currentChord.forEach((freq, index) => {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    // Set up oscillator
+                    oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Filter for warmth
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(freq * 3, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                    
+                    // Volume based on voice (bass louder, higher voices softer)
+                    const volume = (3 - index) * 0.02;
+                    gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                    
+                    // Start oscillator
+                    oscillator.start();
+                    
+                    // Store for later control
+                    if (!this.classicalSystem.harmonicVoices) {
+                        this.classicalSystem.harmonicVoices = [];
+                    }
+                    this.classicalSystem.harmonicVoices.push({ oscillator, gainNode, filter, freq });
+                });
+            };
+            
+            this.startThematicDevelopment = () => {
+                // Play main theme with variations
+                this.classicalSystem.interval = setInterval(() => {
+                    this.playThemeNote();
+                }, 300); // Theme notes every 300ms
+            };
+            
+            this.playThemeNote = () => {
+                const themeNote = this.classicalSystem.theme[this.classicalSystem.themeIndex];
+                const duration = 0.4;
+                const volume = 0.15;
+                
+                // Create theme note with classical characteristics
+                this.createClassicalNote(themeNote, duration, volume, 'triangle');
+                
+                // Move to next note
+                this.classicalSystem.themeIndex = (this.classicalSystem.themeIndex + 1) % this.classicalSystem.theme.length;
+                
+                // Change chord every 4 notes (classical phrase structure)
+                if (this.classicalSystem.themeIndex === 0) {
+                    this.progressToNextChord();
+                }
+            };
+            
+            this.progressToNextChord = () => {
+                // Classical chord progression: i - iv - V - i
+                const progression = [0, 3, 4, 0]; // Am - Dm - E - Am
+                this.classicalSystem.currentChord = progression[this.classicalSystem.phraseCount % progression.length];
+                this.classicalSystem.phraseCount++;
+                
+                // Update harmonic foundation
+                this.updateHarmonicFoundation();
+            };
+            
+            this.updateHarmonicFoundation = () => {
+                if (!this.classicalSystem.harmonicVoices) return;
+                
+                const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                
+                this.classicalSystem.harmonicVoices.forEach((voice, index) => {
+                    if (index < currentChord.length) {
+                        const newFreq = currentChord[index];
+                        const now = this.audioContext.currentTime;
+                        
+                        // Smooth voice leading - gradual frequency change
+                        voice.oscillator.frequency.setValueAtTime(voice.freq, now);
+                        voice.oscillator.frequency.linearRampToValueAtTime(newFreq, now + 0.5);
+                        voice.freq = newFreq;
+                    }
+                });
+            };
+            
+            this.startDynamicPhrasing = () => {
+                // Create dynamic phrasing based on game state
+                setInterval(() => {
+                    this.updateDynamics();
+                }, 1000);
+            };
+            
+            this.updateDynamics = () => {
+                // Dynamic changes based on game intensity
+                const baseDynamics = 0.3;
+                const intensity = Math.min(this.level / 10, 1); // Scale with game level
+                this.classicalSystem.dynamics = baseDynamics + (intensity * 0.4);
+                
+                // Update all voices with new dynamics
+                if (this.classicalSystem.harmonicVoices) {
+                    this.classicalSystem.harmonicVoices.forEach((voice, index) => {
+                        const volume = (3 - index) * 0.02 * this.classicalSystem.dynamics;
+                        voice.gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                    });
+                }
+            };
+            
+            this.createClassicalNote = (frequency, duration, volume, type = 'triangle') => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    // Set up oscillator
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+            oscillator.type = type;
+            
+                    // Filter for classical warmth
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 4, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                    
+                    // Classical envelope - smooth attack and decay
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.1);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.7, this.audioContext.currentTime + duration * 0.7);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    
+                    // Start oscillator
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + duration);
+                } catch (error) {
+                    console.warn('Classical note error:', error);
+                }
+            };
+            
+            this.stopClassicalSystem = () => {
+                if (this.classicalSystem.interval) {
+                    clearInterval(this.classicalSystem.interval);
+                    this.classicalSystem.interval = null;
+                }
+                if (this.classicalSystem.harmonicVoices) {
+                    this.classicalSystem.harmonicVoices.forEach(({ oscillator }) => {
+                        try {
+                            oscillator.stop();
+                        } catch (e) {}
+                    });
+                    this.classicalSystem.harmonicVoices = [];
+                }
+                this.classicalSystem.active = false;
+            };
+            
             // Create arpeggiator sound with FM synthesis
             this.createArpeggiatorSound = (frequency, duration, type = 'triangle', volume = 0.1) => {
                 if (!this.audioInitialized || !this.audioContext) return;
@@ -1465,33 +1676,35 @@ class TetrisGame {
                     this.createTechnoSound(440, 0.5, 'sine', 0.3);
                 },
                 move: () => {
-                    const freq = this.getNextTechnoFreq();
-                    this.createTechnoSound(freq, 0.2, 'square', 0.15);
-                    this.createGranularSound(freq * 2, 0.1, 0.05); // Add granular texture
+                    // Use scale tones for harmonic coherence
+                    const scaleIndex = Math.floor(Math.random() * this.classicalSystem.scale.length);
+                    const freq = this.classicalSystem.scale[scaleIndex];
+                    this.createClassicalNote(freq, 0.2, 0.15, 'triangle');
                     this.triggerSidechain();
                 },
                 rotate: () => {
-                    const freq = this.getNextTechnoFreq() * 1.5;
-                    this.createTechnoSound(freq, 0.25, 'triangle', 0.18);
-                    this.createSpectralSound(freq * 1.5, 0.15, 0.08); // Add spectral character
+                    // Use chord tones for harmonic coherence
+                    const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                    const chordIndex = Math.floor(Math.random() * currentChord.length);
+                    const freq = currentChord[chordIndex];
+                    this.createClassicalNote(freq, 0.25, 0.18, 'triangle');
                     this.triggerSidechain();
                 },
                 drop: () => {
-                    const freq = this.getNextTechnoFreq() * 0.5;
-                    this.createTechnoSound(freq, 0.3, 'sawtooth', 0.2);
-                    this.createGranularSound(freq * 0.5, 0.2, 0.1); // Add granular texture
+                    // Use bass note for harmonic foundation
+                    const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                    const freq = currentChord[0]; // Bass note
+                    this.createClassicalNote(freq, 0.3, 0.2, 'sine');
                     this.triggerSidechain();
                 },
             lineClear: () => {
-                    // Layered chord progression with spectral enhancement
-                    this.createTechnoSound(400, 0.4, 'triangle', 0.25);
-                    this.createSpectralSound(400, 0.3, 0.1);
-                    setTimeout(() => this.createTechnoSound(500, 0.4, 'triangle', 0.25), 50);
-                    setTimeout(() => this.createSpectralSound(500, 0.3, 0.1), 50);
-                    setTimeout(() => this.createTechnoSound(600, 0.4, 'triangle', 0.25), 100);
-                    setTimeout(() => this.createSpectralSound(600, 0.3, 0.1), 100);
-                    setTimeout(() => this.createTechnoSound(800, 0.4, 'triangle', 0.25), 150);
-                    setTimeout(() => this.createSpectralSound(800, 0.3, 0.1), 150);
+                    // Classical chord arpeggio for line clear
+                    const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                    currentChord.forEach((freq, index) => {
+                        setTimeout(() => {
+                            this.createClassicalNote(freq, 0.4, 0.25, 'triangle');
+                        }, index * 100);
+                    });
                     this.triggerSidechain();
             },
             gameOver: () => {
@@ -1508,25 +1721,15 @@ class TetrisGame {
                     this.createTechnoSound(600, 0.4, 'triangle', 0.25);
                 },
                 tetris: () => {
-                    // Special Tetris layered sound with rhythmic gate
-                    this.createTechnoSound(400, 0.3, 'triangle', 0.3);
-                    this.addRhythmicGate(400 * 2, 0.2, 0.1);
-                    setTimeout(() => {
-                        this.createTechnoSound(500, 0.3, 'triangle', 0.3);
-                        this.addRhythmicGate(500 * 2, 0.2, 0.1);
-                    }, 50);
-                    setTimeout(() => {
-                        this.createTechnoSound(600, 0.3, 'triangle', 0.3);
-                        this.addRhythmicGate(600 * 2, 0.2, 0.1);
-                    }, 100);
-                    setTimeout(() => {
-                        this.createTechnoSound(800, 0.3, 'triangle', 0.3);
-                        this.addRhythmicGate(800 * 2, 0.2, 0.1);
-                    }, 150);
-                    setTimeout(() => {
-                        this.createTechnoSound(1000, 0.3, 'triangle', 0.3);
-                        this.addRhythmicGate(1000 * 2, 0.2, 0.1);
-                    }, 200);
+                    // Special Tetris - ascending scale for triumph
+                    const scale = this.classicalSystem.scale;
+                    const ascendingScale = scale.slice(0, 4).concat(scale.slice(0, 4).map(f => f * 2));
+                    
+                    ascendingScale.forEach((freq, index) => {
+                        setTimeout(() => {
+                            this.createClassicalNote(freq, 0.3, 0.3, 'triangle');
+                        }, index * 80);
+                    });
                 },
                 startMetronome: () => this.startMetronome(),
                 stopMetronome: () => this.stopMetronome()
