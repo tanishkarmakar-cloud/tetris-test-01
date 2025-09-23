@@ -521,7 +521,7 @@ class TetrisGame {
                 }
             };
             
-            // Create metronome sound with minimal reverb
+            // Create metronome sound with slight reverb
             this.createMetronomeSound = (frequency, duration, type = 'sine', volume = 0.1) => {
                 if (!this.audioInitialized || !this.audioContext) {
                     this.initAudioContext();
@@ -531,18 +531,19 @@ class TetrisGame {
                 try {
                     const oscillator = this.audioContext.createOscillator();
                     const gainNode = this.audioContext.createGain();
+                    const reverb = this.createReverb();
                     
-                    // Direct connection for clear metronome beat
+                    // Connect with slight reverb
                     oscillator.connect(gainNode);
-                    gainNode.connect(this.audioContext.destination);
+                    gainNode.connect(reverb.convolver);
                     
                     // Set oscillator properties
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
                     oscillator.type = type;
                     
-                    // Simple envelope for clear beat
+                    // Envelope for clear beat with slight reverb
                     gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.6, this.audioContext.currentTime + 0.01); // Lower volume
                     gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
                     
                     oscillator.start(this.audioContext.currentTime);
@@ -552,7 +553,7 @@ class TetrisGame {
                 }
             };
             
-            // Create techno sound with heavy reverb
+            // Create techno sound with heavy reverb and layering
             this.createTechnoSound = (frequency, duration, type = 'sine', volume = 0.1, isMetronome = false) => {
                 if (!this.audioInitialized || !this.audioContext) {
                     this.initAudioContext();
@@ -577,13 +578,16 @@ class TetrisGame {
                         oscillator.detune.setValueAtTime(Math.random() * 20 - 10, this.audioContext.currentTime);
                     }
                     
-                    // Envelope with natural falloff
+                    // Longer duration for layering effect
+                    const extendedDuration = duration * 3;
+                    
+                    // Envelope with stretched falloff for layering
                     gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
                     gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
-                    gainNode.gain.exponentialRampToValueAtTime(0.0001, this.audioContext.currentTime + duration * 2);
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, this.audioContext.currentTime + extendedDuration);
                     
                     oscillator.start(this.audioContext.currentTime);
-                    oscillator.stop(this.audioContext.currentTime + duration);
+                    oscillator.stop(this.audioContext.currentTime + extendedDuration);
                 } catch (error) {
                     console.warn('Audio playback error:', error);
                 }
@@ -604,40 +608,43 @@ class TetrisGame {
                 },
                 move: () => {
                     const freq = this.getNextTechnoFreq();
-                    this.createTechnoSound(freq, 0.3, 'square', 0.1);
+                    this.createTechnoSound(freq, 0.2, 'square', 0.15);
                 },
                 rotate: () => {
                     const freq = this.getNextTechnoFreq() * 1.5;
-                    this.createTechnoSound(freq, 0.4, 'triangle', 0.12);
+                    this.createTechnoSound(freq, 0.25, 'triangle', 0.18);
                 },
                 drop: () => {
                     const freq = this.getNextTechnoFreq() * 0.5;
-                    this.createTechnoSound(freq, 0.5, 'sawtooth', 0.15);
+                    this.createTechnoSound(freq, 0.3, 'sawtooth', 0.2);
                 },
                 lineClear: () => {
-                    // Simple chord
-                    this.createTechnoSound(400, 0.6, 'triangle', 0.2);
-                    setTimeout(() => this.createTechnoSound(500, 0.6, 'triangle', 0.2), 100);
-                    setTimeout(() => this.createTechnoSound(600, 0.6, 'triangle', 0.2), 200);
+                    // Layered chord progression
+                    this.createTechnoSound(400, 0.4, 'triangle', 0.25);
+                    setTimeout(() => this.createTechnoSound(500, 0.4, 'triangle', 0.25), 50);
+                    setTimeout(() => this.createTechnoSound(600, 0.4, 'triangle', 0.25), 100);
+                    setTimeout(() => this.createTechnoSound(800, 0.4, 'triangle', 0.25), 150);
                 },
                 gameOver: () => {
-                    // Descending sound
-                    this.createTechnoSound(400, 0.8, 'sawtooth', 0.2);
-                    setTimeout(() => this.createTechnoSound(300, 0.8, 'sawtooth', 0.2), 150);
-                    setTimeout(() => this.createTechnoSound(200, 0.8, 'sawtooth', 0.2), 300);
+                    // Descending layered sound
+                    this.createTechnoSound(400, 0.5, 'sawtooth', 0.25);
+                    setTimeout(() => this.createTechnoSound(300, 0.5, 'sawtooth', 0.25), 100);
+                    setTimeout(() => this.createTechnoSound(200, 0.5, 'sawtooth', 0.25), 200);
+                    setTimeout(() => this.createTechnoSound(100, 0.5, 'sawtooth', 0.25), 300);
                 },
                 button: () => {
-                    this.createTechnoSound(800, 0.3, 'square', 0.1);
+                    this.createTechnoSound(800, 0.15, 'square', 0.12);
                 },
                 levelUp: () => {
-                    this.createTechnoSound(600, 0.8, 'triangle', 0.2);
+                    this.createTechnoSound(600, 0.4, 'triangle', 0.25);
                 },
                 tetris: () => {
-                    // Special Tetris sound
-                    this.createTechnoSound(400, 0.6, 'triangle', 0.25);
-                    setTimeout(() => this.createTechnoSound(500, 0.6, 'triangle', 0.25), 100);
-                    setTimeout(() => this.createTechnoSound(600, 0.6, 'triangle', 0.25), 200);
-                    setTimeout(() => this.createTechnoSound(800, 0.6, 'triangle', 0.25), 300);
+                    // Special Tetris layered sound
+                    this.createTechnoSound(400, 0.3, 'triangle', 0.3);
+                    setTimeout(() => this.createTechnoSound(500, 0.3, 'triangle', 0.3), 50);
+                    setTimeout(() => this.createTechnoSound(600, 0.3, 'triangle', 0.3), 100);
+                    setTimeout(() => this.createTechnoSound(800, 0.3, 'triangle', 0.3), 150);
+                    setTimeout(() => this.createTechnoSound(1000, 0.3, 'triangle', 0.3), 200);
                 },
                 startMetronome: () => this.startMetronome(),
                 stopMetronome: () => this.stopMetronome()
@@ -1346,6 +1353,12 @@ class TetrisGame {
         
         // Spawn the first piece immediately
         this.spawnPiece();
+        
+        // Start the game so pieces fall
+        this.gameRunning = true;
+        this.gamePaused = false;
+        this.sounds.startMetronome();
+        this.gameLoop();
         
         // Update displays
         this.updateDisplay();
