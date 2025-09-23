@@ -138,6 +138,9 @@ class TetrisGame {
         this.setupResponsiveCanvas();
         this.updateDisplay();
         this.showMobileControls();
+        
+        // Start metronome immediately for continuous beat
+        this.sounds.startMetronome();
     }
     
     /**
@@ -486,7 +489,7 @@ class TetrisGame {
             // Create metronome
             this.metronomeInterval = null;
             this.beatCount = 0;
-            this.bpm = 120; // 80s techno tempo
+            this.bpm = 140; // Faster, more energetic techno tempo
             
             this.startMetronome = () => {
                 if (this.metronomeInterval) return;
@@ -507,11 +510,15 @@ class TetrisGame {
             
             this.playMetronomeBeat = () => {
                 const isStrongBeat = this.beatCount % 4 === 0;
-                const frequency = isStrongBeat ? 100 : 80;
-                const volume = isStrongBeat ? 0.3 : 0.2; // Much louder metronome
                 
-                this.createTechnoSound(frequency, 0.2, 'sine', volume, true);
-                this.updateMetronomeVisual(this.beatCount % 4);
+                if (isStrongBeat) {
+                    // Strong beat - bass drum + high hat
+                    this.createTechnoSound(60, 0.4, 'sine', 0.6, true); // Bass drum
+                    this.createTechnoSound(200, 0.2, 'square', 0.3, true); // High hat
+                } else {
+                    // Regular beat - just high hat
+                    this.createTechnoSound(150, 0.15, 'square', 0.4, true); // High hat
+                }
             };
             
             // Create techno sound with heavy reverb
@@ -539,10 +546,10 @@ class TetrisGame {
                         oscillator.detune.setValueAtTime(Math.random() * 20 - 10, this.audioContext.currentTime);
                     }
                     
-                    // Envelope with longer decay for reverb
+                    // Envelope with natural falloff
                     gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
                     gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, this.audioContext.currentTime + duration * 2);
                     
                     oscillator.start(this.audioContext.currentTime);
                     oscillator.stop(this.audioContext.currentTime + duration);
@@ -566,40 +573,40 @@ class TetrisGame {
                 },
                 move: () => {
                     const freq = this.getNextTechnoFreq();
-                    this.createTechnoSound(freq, 0.1, 'square', 0.1);
+                    this.createTechnoSound(freq, 0.3, 'square', 0.1);
                 },
                 rotate: () => {
                     const freq = this.getNextTechnoFreq() * 1.5;
-                    this.createTechnoSound(freq, 0.15, 'triangle', 0.12);
+                    this.createTechnoSound(freq, 0.4, 'triangle', 0.12);
                 },
                 drop: () => {
                     const freq = this.getNextTechnoFreq() * 0.5;
-                    this.createTechnoSound(freq, 0.2, 'sawtooth', 0.15);
+                    this.createTechnoSound(freq, 0.5, 'sawtooth', 0.15);
                 },
                 lineClear: () => {
                     // Simple chord
-                    this.createTechnoSound(400, 0.3, 'triangle', 0.2);
-                    setTimeout(() => this.createTechnoSound(500, 0.3, 'triangle', 0.2), 100);
-                    setTimeout(() => this.createTechnoSound(600, 0.3, 'triangle', 0.2), 200);
+                    this.createTechnoSound(400, 0.6, 'triangle', 0.2);
+                    setTimeout(() => this.createTechnoSound(500, 0.6, 'triangle', 0.2), 100);
+                    setTimeout(() => this.createTechnoSound(600, 0.6, 'triangle', 0.2), 200);
                 },
                 gameOver: () => {
                     // Descending sound
-                    this.createTechnoSound(400, 0.3, 'sawtooth', 0.2);
-                    setTimeout(() => this.createTechnoSound(300, 0.3, 'sawtooth', 0.2), 150);
-                    setTimeout(() => this.createTechnoSound(200, 0.3, 'sawtooth', 0.2), 300);
+                    this.createTechnoSound(400, 0.8, 'sawtooth', 0.2);
+                    setTimeout(() => this.createTechnoSound(300, 0.8, 'sawtooth', 0.2), 150);
+                    setTimeout(() => this.createTechnoSound(200, 0.8, 'sawtooth', 0.2), 300);
                 },
                 button: () => {
-                    this.createTechnoSound(800, 0.1, 'square', 0.1);
+                    this.createTechnoSound(800, 0.3, 'square', 0.1);
                 },
                 levelUp: () => {
-                    this.createTechnoSound(600, 0.4, 'triangle', 0.2);
+                    this.createTechnoSound(600, 0.8, 'triangle', 0.2);
                 },
                 tetris: () => {
                     // Special Tetris sound
-                    this.createTechnoSound(400, 0.2, 'triangle', 0.25);
-                    setTimeout(() => this.createTechnoSound(500, 0.2, 'triangle', 0.25), 100);
-                    setTimeout(() => this.createTechnoSound(600, 0.2, 'triangle', 0.25), 200);
-                    setTimeout(() => this.createTechnoSound(800, 0.2, 'triangle', 0.25), 300);
+                    this.createTechnoSound(400, 0.6, 'triangle', 0.25);
+                    setTimeout(() => this.createTechnoSound(500, 0.6, 'triangle', 0.25), 100);
+                    setTimeout(() => this.createTechnoSound(600, 0.6, 'triangle', 0.25), 200);
+                    setTimeout(() => this.createTechnoSound(800, 0.6, 'triangle', 0.25), 300);
                 },
                 startMetronome: () => this.startMetronome(),
                 stopMetronome: () => this.stopMetronome()
@@ -1467,18 +1474,6 @@ class TetrisGame {
         setTimeout(() => gameScreen.classList.remove('screen-flicker'), 100);
     }
     
-    updateMetronomeVisual(beatIndex) {
-        const metronomeIndicator = document.getElementById('metronomeIndicator');
-        if (!metronomeIndicator) return;
-        
-        const dots = metronomeIndicator.querySelectorAll('.beat-dot');
-        dots.forEach((dot, index) => {
-            dot.classList.remove('active');
-            if (index === beatIndex) {
-                dot.classList.add('active');
-            }
-        });
-    }
     
     
     // High score management
