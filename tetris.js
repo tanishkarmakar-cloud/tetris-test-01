@@ -640,10 +640,8 @@ class TetrisGame {
             }
         }
         
-        // Add rotation animation
-        this.addPieceRotateEffect();
         this.draw();
-        this.addScreenShake(0.3);
+        this.addScreenShake(0.1);
     }
     
     /**
@@ -1248,11 +1246,6 @@ class TetrisGame {
         }, 1500);
     }
     
-    addPieceRotateEffect() {
-        const gameBoard = document.querySelector('.game-board');
-        gameBoard.classList.add('piece-rotate');
-        setTimeout(() => gameBoard.classList.remove('piece-rotate'), 300);
-    }
     
     addLineClearFlash() {
         const gameBoard = document.querySelector('.game-board');

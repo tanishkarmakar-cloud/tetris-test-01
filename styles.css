@@ -1002,9 +1002,9 @@ body {
 }
 
 @keyframes piece-rotate {
-    0% { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.1); }
-    100% { transform: rotate(360deg) scale(1); }
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
 @keyframes line-clear-flash {
@@ -1052,7 +1052,7 @@ body {
 }
 
 .piece-rotate {
-    animation: piece-rotate 0.3s ease-in-out;
+    animation: piece-rotate 0.2s ease-in-out;
 }
 
 .line-clear-flash {
