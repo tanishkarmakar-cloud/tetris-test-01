@@ -606,7 +606,7 @@ class TetrisGame {
                 
                 // Master gain node to prevent clipping when sounds layer
                 this.masterGain = this.audioContext.createGain();
-                this.masterGain.gain.setValueAtTime(0.4, this.audioContext.currentTime); // Prevent clipping
+                this.masterGain.gain.setValueAtTime(0.7, this.audioContext.currentTime); // Increased for prominence
                 
                 // Dynamic range compressor for professional sound
                 this.compressor = this.audioContext.createDynamicsCompressor();
@@ -705,8 +705,8 @@ class TetrisGame {
                 this.sidechainGain.gain.exponentialRampToValueAtTime(1, now + 0.2);
                 
                 // Also duck the master gain slightly for breathing effect
-                this.masterGain.gain.setValueAtTime(0.25, now);
-                this.masterGain.gain.linearRampToValueAtTime(0.4, now + 0.15);
+                this.masterGain.gain.setValueAtTime(0.4, now);
+                this.masterGain.gain.linearRampToValueAtTime(0.7, now + 0.15);
             };
             
             // Rhythmic gating effect
@@ -1627,8 +1627,8 @@ class TetrisGame {
                 this.classicalSystem.adaptiveTempo = baseTempo + tempoBoost;
                 
                 // Update adaptive volume
-                const baseVolume = 0.4;
-                const volumeBoost = this.classicalSystem.energy * 0.2;
+                const baseVolume = 0.7;
+                const volumeBoost = this.classicalSystem.energy * 0.3;
                 this.classicalSystem.adaptiveVolume = baseVolume + volumeBoost;
             };
             
@@ -2373,6 +2373,353 @@ class TetrisGame {
                 }
             };
             
+            // Create prominent trance tone with heavy reverb
+            this.createTranceTone = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    const reverb = this.createReverb();
+                    
+                    // Prominent trance tone
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Rich vibrato for trance character
+                    lfo.frequency.setValueAtTime(4, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.05, this.audioContext.currentTime);
+                    
+                    // Warm low-pass filter
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 2.5, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with heavy reverb
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Prominent envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.05);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + duration * 0.6);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Trance tone error:', error);
+                }
+            };
+            
+            // Create floating pad with slow modulation
+            this.createFloatingPad = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    const reverb = this.createReverb();
+                    
+                    // Floating pad
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Slow modulation for floating character
+                    lfo.frequency.setValueAtTime(0.3, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.1, this.audioContext.currentTime);
+                    
+                    // Soft low-pass filter
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 1.8, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with heavy reverb
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Floating envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.4);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.9, now + duration * 0.3);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + duration * 0.7);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Floating pad error:', error);
+                }
+            };
+            
+            // Create trance sparkle with frequency sweep
+            this.createTranceSparkle = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    const reverb = this.createReverb();
+                    
+                    // Trance sparkle
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'triangle';
+                    
+                    // Fast vibrato for sparkle
+                    lfo.frequency.setValueAtTime(12, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.08, this.audioContext.currentTime);
+                    
+                    // Band-pass filter for sparkle character
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Sparkle envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.02);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + duration * 0.4);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Trance sparkle error:', error);
+                }
+            };
+            
+            // Create bass pulse for impact
+            this.createBassPulse = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const reverb = this.createReverb();
+                    
+                    // Bass pulse
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Low-pass filter for bass character
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.3, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Pulse envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + duration * 0.3);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.4, now + duration * 0.7);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + duration);
+                } catch (error) {
+                    console.warn('Bass pulse error:', error);
+                }
+            };
+            
+            // Create dramatic sweep for rotation
+            this.createDramaticSweep = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    const reverb = this.createReverb();
+                    
+                    // Dramatic sweep
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Dramatic frequency sweep
+                    lfo.frequency.setValueAtTime(2, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.3, this.audioContext.currentTime);
+                    
+                    // Low-pass filter
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 2.2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.6, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Dramatic envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + duration * 0.8);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Dramatic sweep error:', error);
+                }
+            };
+            
+            // Create sparkle cascade for ethereal effect
+            this.createSparkleCascade = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    // Create multiple sparkles in cascade
+                    for (let i = 0; i < 3; i++) {
+                        setTimeout(() => {
+                            this.createTranceSparkle(frequency * (1 + i * 0.3), duration * 0.6, volume * 0.7);
+                        }, i * 100);
+                    }
+                } catch (error) {
+                    console.warn('Sparkle cascade error:', error);
+                }
+            };
+            
+            // Create dramatic descent for drop
+            this.createDramaticDescent = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    const reverb = this.createReverb();
+                    
+                    // Dramatic descent
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Dramatic frequency descent
+                    lfo.frequency.setValueAtTime(1.5, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.4, this.audioContext.currentTime);
+                    
+                    // Low-pass filter
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 1.5, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.4, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Dramatic envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.2);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + duration * 0.6);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Dramatic descent error:', error);
+                }
+            };
+            
+            // Create deep resonance for impact
+            this.createDeepResonance = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const reverb = this.createReverb();
+                    
+                    // Deep resonance
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Resonant filter
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 1.3, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(4, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Deep envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.3);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.9, now + duration * 0.4);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.5, now + duration * 0.8);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + duration);
+                } catch (error) {
+                    console.warn('Deep resonance error:', error);
+                }
+            };
+            
             // Create harmonious note - simple, clean, and musical with natural layering
             this.createHarmoniousNote = (frequency, duration, volume, type = 'sine') => {
                 if (!this.audioInitialized || !this.audioContext) return;
@@ -2652,74 +2999,86 @@ class TetrisGame {
                     this.createTechnoSound(440, 0.5, 'sine', 0.3);
                 },
                 move: () => {
-                    // Ethereal trance-like move sound
+                    // Ethereal trance move with prominent impact
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[1]; // Use middle voice of current chord
                     
                     // Track action for momentum
                     this.trackAction('move');
                     
-                    // Adaptive volume based on energy and tension
-                    const adaptiveVolume = 0.3 * this.classicalSystem.adaptiveVolume;
+                    // Much more prominent volume
+                    const adaptiveVolume = 0.8 * this.classicalSystem.adaptiveVolume;
                     
-                    // Layer 1: Main ethereal tone
-                    this.createEtherealTone(freq, 0.3, adaptiveVolume);
+                    // Layer 1: Prominent ethereal tone with heavy reverb
+                    this.createTranceTone(freq, 0.4, adaptiveVolume);
                     
-                    // Layer 2: Soft pad for atmosphere
-                    this.createEtherealPad(freq * 0.5, 0.8, adaptiveVolume * 0.2);
+                    // Layer 2: Floating pad with slow sweep
+                    this.createFloatingPad(freq * 0.6, 1.2, adaptiveVolume * 0.6);
                     
-                    // Layer 3: Gentle sparkle for responsiveness
-                    this.createGentleSparkle(freq * 2, 0.2, adaptiveVolume * 0.15);
+                    // Layer 3: Ethereal sparkle with frequency sweep
+                    this.createTranceSparkle(freq * 2.5, 0.6, adaptiveVolume * 0.4);
+                    
+                    // Layer 4: Deep bass pulse for impact
+                    this.createBassPulse(freq * 0.3, 0.8, adaptiveVolume * 0.5);
                     
                     this.triggerSidechain();
                 },
                 rotate: () => {
-                    // Ethereal trance-like rotation sound
+                    // Ethereal trance rotation with dramatic sweep
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[2]; // Use top voice of current chord
                     
                     // Track action for momentum
                     this.trackAction('rotate');
                     
-                    // Adaptive volume with tension boost
-                    const adaptiveVolume = 0.4 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.2);
+                    // Much more prominent volume with tension boost
+                    const adaptiveVolume = 1.0 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.4);
                     
-                    // Layer 1: Main ethereal tone
-                    this.createEtherealTone(freq, 0.4, adaptiveVolume);
+                    // Layer 1: Prominent trance tone
+                    this.createTranceTone(freq, 0.6, adaptiveVolume);
                     
-                    // Layer 2: Gentle sweep for rotation feel
-                    this.createEtherealSweep(freq * 1.2, 0.5, adaptiveVolume * 0.3);
+                    // Layer 2: Dramatic frequency sweep for rotation
+                    this.createDramaticSweep(freq * 0.8, 1.0, adaptiveVolume * 0.7);
                     
-                    // Layer 3: Soft pad for atmosphere
-                    this.createEtherealPad(freq * 0.8, 0.6, adaptiveVolume * 0.25);
+                    // Layer 3: Floating pad with modulation
+                    this.createFloatingPad(freq * 1.2, 1.5, adaptiveVolume * 0.5);
                     
-                    // Layer 4: Gentle sparkle for precision
-                    this.createGentleSparkle(freq * 2.5, 0.3, adaptiveVolume * 0.2);
+                    // Layer 4: Ethereal sparkle cascade
+                    this.createSparkleCascade(freq * 3, 0.8, adaptiveVolume * 0.6);
+                    
+                    // Layer 5: Deep resonance for impact
+                    this.createDeepResonance(freq * 0.4, 1.2, adaptiveVolume * 0.4);
                     
                     this.triggerSidechain();
                 },
                 drop: () => {
-                    // Ethereal trance-like drop sound
+                    // Ethereal trance drop with dramatic impact
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[0]; // Bass note
                     
                     // Track action for momentum
                     this.trackAction('drop');
                     
-                    // Adaptive volume with energy boost
-                    const adaptiveVolume = 0.5 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.3);
+                    // Much more prominent volume with energy boost
+                    const adaptiveVolume = 1.2 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.5);
                     
-                    // Layer 1: Main ethereal tone
-                    this.createEtherealTone(freq, 0.4, adaptiveVolume);
+                    // Layer 1: Prominent trance tone
+                    this.createTranceTone(freq, 0.8, adaptiveVolume);
                     
-                    // Layer 2: Gentle descent for falling motion
-                    this.createEtherealDescent(freq * 0.6, 0.6, adaptiveVolume * 0.4);
+                    // Layer 2: Dramatic frequency descent
+                    this.createDramaticDescent(freq * 0.5, 1.2, adaptiveVolume * 0.8);
                     
-                    // Layer 3: Soft pad for atmosphere
-                    this.createEtherealPad(freq * 0.4, 0.8, adaptiveVolume * 0.3);
+                    // Layer 3: Floating pad with deep modulation
+                    this.createFloatingPad(freq * 0.3, 1.8, adaptiveVolume * 0.7);
                     
-                    // Layer 4: Gentle resonance for depth
-                    this.createGentleResonance(freq * 0.8, 1.0, adaptiveVolume * 0.25);
+                    // Layer 4: Ethereal sparkle cascade
+                    this.createSparkleCascade(freq * 2, 1.0, adaptiveVolume * 0.6);
+                    
+                    // Layer 5: Deep bass impact
+                    this.createBassPulse(freq * 0.2, 1.5, adaptiveVolume * 0.9);
+                    
+                    // Layer 6: Deep resonance for sustain
+                    this.createDeepResonance(freq * 0.6, 2.0, adaptiveVolume * 0.5);
                     
                     this.triggerSidechain();
                 },
