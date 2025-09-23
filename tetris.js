@@ -533,6 +533,33 @@ class TetrisGame {
                 interval: null
             };
             
+            // Steve Reich-inspired phasing system
+            this.phasingSystem = {
+                active: false,
+                patterns: [],
+                phaseOffset: 0,
+                interval: null,
+                basePattern: [1, 0, 1, 0, 1, 1, 0, 1], // Basic ostinato
+                phaseRate: 0.001 // How fast patterns phase
+            };
+            
+            // Minimalist ostinato system
+            this.ostinatoSystem = {
+                active: false,
+                layers: [],
+                intervals: [],
+                baseFrequencies: [220, 246.94, 277.18, 329.63], // A minor arpeggio
+                phaseOffsets: [0, 0.125, 0.25, 0.375] // Staggered entries
+            };
+            
+            // Canon and imitation system
+            this.canonSystem = {
+                active: false,
+                voices: [],
+                imitationDelay: 0.5, // Half beat delay
+                interval: null
+            };
+            
             this.startMetronome = () => {
                 if (this.metronomeInterval) return;
                 
@@ -558,6 +585,11 @@ class TetrisGame {
                 
                 // Initialize spatial audio
                 this.initSpatialAudio();
+                
+                // Start Reich-inspired systems
+                this.startPhasingSystem();
+                this.startOstinatoSystem();
+                this.startCanonSystem();
             };
             
             this.stopMetronome = () => {
@@ -568,6 +600,9 @@ class TetrisGame {
                 this.stopArpeggiator();
                 this.stopBinauralBeats();
                 this.stopAmbientPads();
+                this.stopPhasingSystem();
+                this.stopOstinatoSystem();
+                this.stopCanonSystem();
             };
             
             // Start arpeggiator for melodic sequences
@@ -654,6 +689,10 @@ class TetrisGame {
                 const isSnareBeat = beatInBar === 2; // Snare on 3
                 const isHiHatBeat = beatInBar === 1 || beatInBar === 3; // Hi-hats on 2 and 4
                 
+                // Reich-inspired fast-paced patterns
+                const sixteenthNote = this.beatCount % 16; // 16th note subdivision
+                const isSixteenthBeat = sixteenthNote % 4 === 0; // Every 4th 16th note
+                
                 // Kick drum (bass) - on beats 1 and 3
                 if (isKickBeat) {
                     this.createMetronomeSound(60, 0.3, 'sine', 0.4); // Deep kick
@@ -674,6 +713,12 @@ class TetrisGame {
                     this.createMetronomeSound(1200, 0.15, 'square', 0.15); // Open hi-hat
                 }
                 
+                // Reich-style 16th note patterns
+                if (isSixteenthBeat) {
+                    const freq = 1000 + (sixteenthNote * 50); // Ascending pattern
+                    this.createMetronomeSound(freq, 0.05, 'square', 0.1);
+                }
+                
                 // Bass line - every beat with variation
                 const bassFreq = beatInBar === 0 ? 80 : (beatInBar === 2 ? 100 : 90);
                 this.createMetronomeSound(bassFreq, 0.4, 'sine', 0.25); // Bass line
@@ -682,20 +727,25 @@ class TetrisGame {
                 if (beatInBar === 0) {
                     this.barCount++;
                     
-                    // Add techno fills every 8 bars
-                    if (this.barCount % 8 === 0) {
-                        this.addTechnoFill();
-                    }
-                    
-                    // Add polyrhythmic elements every 4 bars
-                    if (this.barCount % 4 === 0) {
-                        this.addPolyrhythmicElement();
-                    }
-                    
-                    // Tempo variations for trance-like effect
-                    if (this.barCount % 16 === 0) {
-                        this.addTempoVariation();
-                    }
+                // Add techno fills every 8 bars
+                if (this.barCount % 8 === 0) {
+                    this.addTechnoFill();
+                }
+                
+                // Add polyrhythmic elements every 4 bars
+                if (this.barCount % 4 === 0) {
+                    this.addPolyrhythmicElement();
+                }
+                
+                // Add Reich-style ethereal textures every 2 bars
+                if (this.barCount % 2 === 0) {
+                    this.addEtherealTexture();
+                }
+                
+                // Tempo variations for trance-like effect
+                if (this.barCount % 16 === 0) {
+                    this.addTempoVariation();
+                }
                 }
             };
             
@@ -733,6 +783,68 @@ class TetrisGame {
                 setTimeout(() => {
                     this.bpm = originalBPM;
                 }, 2000);
+            };
+            
+            // Add Reich-style ethereal textures
+            this.addEtherealTexture = () => {
+                // Create floating, ethereal sounds
+                const etherealFreqs = [220, 330, 440, 660]; // A minor chord
+                
+                etherealFreqs.forEach((freq, index) => {
+                    setTimeout(() => {
+                        this.createEtherealSound(freq, 2.0, 0.05);
+                    }, index * 100);
+                });
+            };
+            
+            // Create ethereal sound with Reich-inspired characteristics
+            this.createEtherealSound = (frequency, duration, volume = 0.1) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    
+                    // LFO for ethereal movement
+                    lfo.frequency.setValueAtTime(0.2, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.1, this.audioContext.currentTime);
+                    
+                    // Filter setup for ethereal quality
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(3, this.audioContext.currentTime);
+                    
+                    // Connect LFO to filter
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(filter.frequency);
+                    
+                    // Main oscillator
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                    
+                    // Ethereal envelope - slow attack, long sustain
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.5);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.5, this.audioContext.currentTime + duration * 0.8);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    
+                    // Start oscillators
+                    oscillator.start(this.audioContext.currentTime);
+                    lfo.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + duration);
+                    lfo.stop(this.audioContext.currentTime + duration);
+                } catch (error) {
+                    console.warn('Ethereal sound error:', error);
+                }
             };
             
             // Binaural beats for brainwave entrainment
@@ -877,6 +989,247 @@ class TetrisGame {
                 });
                 this.ambientPads.oscillators = [];
                 this.ambientPads.active = false;
+            };
+            
+            // Steve Reich-inspired phasing system
+            this.startPhasingSystem = () => {
+                if (this.phasingSystem.active) return;
+                
+                try {
+                    // Create multiple phasing patterns
+                    const patternCount = 4;
+                    const baseFreq = 440; // A4
+                    
+                    for (let i = 0; i < patternCount; i++) {
+                        const oscillator = this.audioContext.createOscillator();
+                        const gainNode = this.audioContext.createGain();
+                        const filter = this.audioContext.createBiquadFilter();
+                        
+                        // Each pattern has slightly different frequency
+                        const freq = baseFreq * (1 + i * 0.01);
+                        oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                        oscillator.type = 'sine';
+                        
+                        // Filter for ethereal quality
+                        filter.type = 'lowpass';
+                        filter.frequency.setValueAtTime(800 + i * 200, this.audioContext.currentTime);
+                        filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+                        
+                        // Connect audio chain
+                        oscillator.connect(filter);
+                        filter.connect(gainNode);
+                        gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                        
+                        // Very low volume for subtle effect
+                        gainNode.gain.setValueAtTime(0.03, this.audioContext.currentTime);
+                        
+                        // Start oscillator
+                        oscillator.start();
+                        
+                        this.phasingSystem.patterns.push({ oscillator, gainNode, filter, index: i });
+                    }
+                    
+                    // Phasing interval - gradually shift patterns
+                    this.phasingSystem.interval = setInterval(() => {
+                        this.updatePhasingPatterns();
+                    }, 50); // Update every 50ms for smooth phasing
+                    
+                    this.phasingSystem.active = true;
+                } catch (error) {
+                    console.warn('Phasing system error:', error);
+                }
+            };
+            
+            this.updatePhasingPatterns = () => {
+                this.phasingSystem.phaseOffset += this.phasingSystem.phaseRate;
+                if (this.phasingSystem.phaseOffset >= 1) {
+                    this.phasingSystem.phaseOffset = 0;
+                }
+                
+                // Update each pattern's volume based on phasing
+                this.phasingSystem.patterns.forEach((pattern, index) => {
+                    const phase = (this.phasingSystem.phaseOffset + index * 0.25) % 1;
+                    const volume = Math.sin(phase * Math.PI * 2) * 0.03 + 0.01;
+                    pattern.gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                });
+            };
+            
+            this.stopPhasingSystem = () => {
+                if (this.phasingSystem.interval) {
+                    clearInterval(this.phasingSystem.interval);
+                    this.phasingSystem.interval = null;
+                }
+                this.phasingSystem.patterns.forEach(({ oscillator }) => {
+                    try {
+                        oscillator.stop();
+                    } catch (e) {}
+                });
+                this.phasingSystem.patterns = [];
+                this.phasingSystem.active = false;
+            };
+            
+            // Minimalist ostinato system (Reich-style repetitive patterns)
+            this.startOstinatoSystem = () => {
+                if (this.ostinatoSystem.active) return;
+                
+                try {
+                    // Create multiple ostinato layers with staggered entries
+                    this.ostinatoSystem.baseFrequencies.forEach((freq, index) => {
+                        const oscillator = this.audioContext.createOscillator();
+                        const gainNode = this.audioContext.createGain();
+                        const filter = this.audioContext.createBiquadFilter();
+                        const lfo = this.audioContext.createOscillator();
+                        const lfoGain = this.audioContext.createGain();
+                        
+                        // LFO for subtle variation
+                        lfo.frequency.setValueAtTime(0.1 + index * 0.05, this.audioContext.currentTime);
+                        lfo.type = 'sine';
+                        lfoGain.gain.setValueAtTime(freq * 0.02, this.audioContext.currentTime);
+                        
+                        // Filter setup
+                        filter.type = 'lowpass';
+                        filter.frequency.setValueAtTime(freq * 3, this.audioContext.currentTime);
+                        filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                        
+                        // Connect LFO to filter
+                        lfo.connect(lfoGain);
+                        lfoGain.connect(filter.frequency);
+                        
+                        // Main oscillator
+                        oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                        oscillator.type = 'triangle';
+                        
+                        // Connect audio chain
+                        oscillator.connect(filter);
+                        filter.connect(gainNode);
+                        gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                        
+                        // Volume with phase offset
+                        const phaseOffset = this.ostinatoSystem.phaseOffsets[index];
+                        gainNode.gain.setValueAtTime(0.02, this.audioContext.currentTime);
+                        
+                        // Start oscillators
+                        oscillator.start();
+                        lfo.start();
+                        
+                        this.ostinatoSystem.layers.push({ oscillator, lfo, gainNode, filter, index });
+                    });
+                    
+                    // Ostinato pattern interval
+                    this.ostinatoSystem.interval = setInterval(() => {
+                        this.updateOstinatoPatterns();
+                    }, 100); // Update every 100ms
+                    
+                    this.ostinatoSystem.active = true;
+                } catch (error) {
+                    console.warn('Ostinato system error:', error);
+                }
+            };
+            
+            this.updateOstinatoPatterns = () => {
+                // Create Reich-style phasing by varying volumes
+                this.ostinatoSystem.layers.forEach((layer, index) => {
+                    const time = Date.now() * 0.001;
+                    const phase = (time * 0.5 + index * 0.25) % 1;
+                    const volume = Math.sin(phase * Math.PI * 2) * 0.02 + 0.01;
+                    layer.gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                });
+            };
+            
+            this.stopOstinatoSystem = () => {
+                if (this.ostinatoSystem.interval) {
+                    clearInterval(this.ostinatoSystem.interval);
+                    this.ostinatoSystem.interval = null;
+                }
+                this.ostinatoSystem.layers.forEach(({ oscillator, lfo }) => {
+                    try {
+                        oscillator.stop();
+                        lfo.stop();
+                    } catch (e) {}
+                });
+                this.ostinatoSystem.layers = [];
+                this.ostinatoSystem.active = false;
+            };
+            
+            // Canon and imitation system (Reich-style delayed imitation)
+            this.startCanonSystem = () => {
+                if (this.canonSystem.active) return;
+                
+                try {
+                    // Create canon voices with different delays
+                    const canonFrequencies = [330, 440, 554.37, 659.25]; // E, A, C#, E
+                    const delays = [0, 0.25, 0.5, 0.75]; // Staggered entries
+                    
+                    canonFrequencies.forEach((freq, index) => {
+                        const oscillator = this.audioContext.createOscillator();
+                        const gainNode = this.audioContext.createGain();
+                        const filter = this.audioContext.createBiquadFilter();
+                        const delay = this.audioContext.createDelay();
+                        const delayGain = this.audioContext.createGain();
+                        
+                        // Set up delay
+                        delay.delayTime.setValueAtTime(delays[index], this.audioContext.currentTime);
+                        delayGain.gain.setValueAtTime(0.7, this.audioContext.currentTime);
+                        
+                        // Filter for ethereal quality
+                        filter.type = 'lowpass';
+                        filter.frequency.setValueAtTime(freq * 2, this.audioContext.currentTime);
+                        filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                        
+                        // Main oscillator
+                        oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+                        oscillator.type = 'sine';
+                        
+                        // Connect audio chain with delay
+                        oscillator.connect(filter);
+                        filter.connect(gainNode);
+                        gainNode.connect(delay);
+                        delay.connect(delayGain);
+                        delayGain.connect(this.sidechainGain || this.audioContext.destination);
+                        
+                        // Volume with gradual fade-in
+                        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                        gainNode.gain.linearRampToValueAtTime(0.02, this.audioContext.currentTime + delays[index] * 2);
+                        
+                        // Start oscillator
+                        oscillator.start();
+                        
+                        this.canonSystem.voices.push({ oscillator, gainNode, filter, delay, index });
+                    });
+                    
+                    // Canon pattern interval
+                    this.canonSystem.interval = setInterval(() => {
+                        this.updateCanonPatterns();
+                    }, 200); // Update every 200ms
+                    
+                    this.canonSystem.active = true;
+                } catch (error) {
+                    console.warn('Canon system error:', error);
+                }
+            };
+            
+            this.updateCanonPatterns = () => {
+                // Create Reich-style imitation by varying volumes
+                this.canonSystem.voices.forEach((voice, index) => {
+                    const time = Date.now() * 0.001;
+                    const phase = (time * 0.3 + index * 0.5) % 1;
+                    const volume = Math.sin(phase * Math.PI * 2) * 0.02 + 0.01;
+                    voice.gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                });
+            };
+            
+            this.stopCanonSystem = () => {
+                if (this.canonSystem.interval) {
+                    clearInterval(this.canonSystem.interval);
+                    this.canonSystem.interval = null;
+                }
+                this.canonSystem.voices.forEach(({ oscillator }) => {
+                    try {
+                        oscillator.stop();
+                    } catch (e) {}
+                });
+                this.canonSystem.voices = [];
+                this.canonSystem.active = false;
             };
             
             // Create arpeggiator sound with FM synthesis
