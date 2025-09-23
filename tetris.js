@@ -1711,6 +1711,380 @@ class TetrisGame {
                 return sum / (end - start) / 255; // Normalize to 0-1
             };
             
+            // Create percussive click for tactile feedback
+            this.createPercussiveClick = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    // Sharp, percussive sound
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'square';
+                    
+                    // High-pass filter for click character
+                    filter.type = 'highpass';
+                    filter.frequency.setValueAtTime(frequency * 0.8, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Sharp attack and quick decay
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.001);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + duration);
+                } catch (error) {
+                    console.warn('Percussive click error:', error);
+                }
+            };
+            
+            // Create impact thump for low-frequency impact
+            this.createImpactThump = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    // Deep, resonant sound
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sawtooth';
+                    
+                    // Low-pass filter for thump character
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 3, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Quick attack, slow decay
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + duration);
+                } catch (error) {
+                    console.warn('Impact thump error:', error);
+                }
+            };
+            
+            // Create sparkle for high-frequency responsiveness
+            this.createSparkle = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    
+                    // Bright, sparkling sound
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'triangle';
+                    
+                    // Add vibrato for sparkle effect
+                    lfo.frequency.setValueAtTime(15, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.1, this.audioContext.currentTime);
+                    
+                    // Band-pass filter for sparkle character
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(3, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Quick attack, quick decay
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.005);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Sparkle error:', error);
+                }
+            };
+            
+            // Create mechanical whir for rotation feel
+            this.createMechanicalWhir = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    
+                    // Mechanical whirring sound
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sawtooth';
+                    
+                    // Add slow modulation for whir effect
+                    lfo.frequency.setValueAtTime(3, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.05, this.audioContext.currentTime);
+                    
+                    // Low-pass filter for mechanical character
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Gradual attack and decay
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.05);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.3, now + duration * 0.7);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Mechanical whir error:', error);
+                }
+            };
+            
+            // Create gear click for mechanical feedback
+            this.createGearClick = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    // Sharp gear click
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'square';
+                    
+                    // Band-pass filter for click character
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(5, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Very sharp attack and quick decay
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.0005);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + duration);
+                } catch (error) {
+                    console.warn('Gear click error:', error);
+                }
+            };
+            
+            // Create gravity whoosh for falling motion
+            this.createGravityWhoosh = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    
+                    // Whooshing sound
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sawtooth';
+                    
+                    // Add frequency sweep for whoosh effect
+                    lfo.frequency.setValueAtTime(0.5, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.3, this.audioContext.currentTime);
+                    
+                    // High-pass filter for whoosh character
+                    filter.type = 'highpass';
+                    filter.frequency.setValueAtTime(frequency * 0.5, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Gradual attack and decay
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.2, now + duration * 0.8);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Gravity whoosh error:', error);
+                }
+            };
+            
+            // Create resonance for depth and sustain
+            this.createResonance = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const reverb = this.createReverb();
+                    
+                    // Resonant tone
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Resonant filter
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 1.5, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(8, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Slow attack, long sustain, slow decay
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.2);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + duration * 0.3);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.4, now + duration * 0.7);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + duration);
+                } catch (error) {
+                    console.warn('Resonance error:', error);
+                }
+            };
+            
+            // Create anticipation sound for building tension
+            this.createAnticipation = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    
+                    // Rising anticipation tone
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Add rising frequency for anticipation
+                    lfo.frequency.setValueAtTime(2, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.2, this.audioContext.currentTime);
+                    
+                    // Band-pass filter for anticipation character
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Rising volume for anticipation
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.3, now + duration * 0.3);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Anticipation error:', error);
+                }
+            };
+            
+            // Create micro-interaction sound for subtle feedback
+            this.createMicroInteraction = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    
+                    // Subtle micro-interaction
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'triangle';
+                    
+                    // High-pass filter for subtlety
+                    filter.type = 'highpass';
+                    filter.frequency.setValueAtTime(frequency * 0.8, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Very quick, subtle envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + duration);
+                } catch (error) {
+                    console.warn('Micro interaction error:', error);
+                }
+            };
+            
             // Create harmonious note - simple, clean, and musical with natural layering
             this.createHarmoniousNote = (frequency, duration, volume, type = 'sine') => {
                 if (!this.audioInitialized || !this.audioContext) return;
@@ -1990,7 +2364,7 @@ class TetrisGame {
                     this.createTechnoSound(440, 0.5, 'sine', 0.3);
                 },
                 move: () => {
-                    // Simple, rhythmic move sound - harmonized with background
+                    // Multi-layered move sound for maximum impact
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[1]; // Use middle voice of current chord
                     
@@ -2000,11 +2374,22 @@ class TetrisGame {
                     // Adaptive volume based on energy and tension
                     const adaptiveVolume = 0.4 * this.classicalSystem.adaptiveVolume;
                     
+                    // Layer 1: Main harmonic tone
                     this.createHarmoniousNote(freq, 0.2, adaptiveVolume, 'sine');
+                    
+                    // Layer 2: Percussive click for tactile feedback
+                    this.createPercussiveClick(freq * 2, 0.05, adaptiveVolume * 0.3);
+                    
+                    // Layer 3: Low-frequency thump for impact
+                    this.createImpactThump(freq * 0.5, 0.15, adaptiveVolume * 0.2);
+                    
+                    // Layer 4: High-frequency sparkle for responsiveness
+                    this.createSparkle(freq * 4, 0.1, adaptiveVolume * 0.15);
+                    
                     this.triggerSidechain();
                 },
                 rotate: () => {
-                    // Rhythmic rotation sound - harmonized with background
+                    // Multi-layered rotation sound with mechanical character
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[2]; // Use top voice of current chord
                     
@@ -2014,11 +2399,22 @@ class TetrisGame {
                     // Adaptive volume with tension boost
                     const adaptiveVolume = 0.5 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.3);
                     
+                    // Layer 1: Main harmonic tone
                     this.createHarmoniousNote(freq, 0.25, adaptiveVolume, 'triangle');
+                    
+                    // Layer 2: Mechanical whir for rotation feel
+                    this.createMechanicalWhir(freq * 1.5, 0.3, adaptiveVolume * 0.4);
+                    
+                    // Layer 3: Gear click for mechanical feedback
+                    this.createGearClick(freq * 0.7, 0.08, adaptiveVolume * 0.25);
+                    
+                    // Layer 4: Harmonic sparkle for precision
+                    this.createSparkle(freq * 3, 0.15, adaptiveVolume * 0.2);
+                    
                     this.triggerSidechain();
                 },
                 drop: () => {
-                    // Rhythmic drop sound - harmonized with background
+                    // Multi-layered drop sound with gravity and impact
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[0]; // Bass note
                     
@@ -2028,11 +2424,22 @@ class TetrisGame {
                     // Adaptive volume with energy boost
                     const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.4);
                     
+                    // Layer 1: Main harmonic tone
                     this.createHarmoniousNote(freq, 0.3, adaptiveVolume, 'sine');
+                    
+                    // Layer 2: Gravity whoosh for falling motion
+                    this.createGravityWhoosh(freq * 0.3, 0.4, adaptiveVolume * 0.5);
+                    
+                    // Layer 3: Impact thump for landing
+                    this.createImpactThump(freq * 0.25, 0.2, adaptiveVolume * 0.6);
+                    
+                    // Layer 4: Resonance for depth
+                    this.createResonance(freq * 0.5, 0.6, adaptiveVolume * 0.3);
+                    
                     this.triggerSidechain();
                 },
             lineClear: () => {
-                    // Progressive line clear - builds harmoniously
+                    // Multi-layered celebration for line clear
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     
                     // Track action for momentum
@@ -2042,13 +2449,35 @@ class TetrisGame {
                     this.classicalSystem.energy = Math.min(1, this.classicalSystem.energy + 0.2);
                     this.classicalSystem.momentum = Math.min(1, this.classicalSystem.momentum + 0.3);
                     
+                    // Adaptive volume with celebration boost
+                    const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.5);
+                    
+                    // Layer 1: Chord arpeggio
                     currentChord.forEach((freq, index) => {
                         setTimeout(() => {
-                            // Adaptive volume with celebration boost
-                            const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.5);
                             this.createHarmoniousNote(freq, 0.4, adaptiveVolume, 'triangle');
-                        }, index * 100); // Faster, more rhythmic
+                        }, index * 100);
                     });
+                    
+                    // Layer 2: Celebration sparkles
+                    setTimeout(() => {
+                        for (let i = 0; i < 3; i++) {
+                            setTimeout(() => {
+                                this.createSparkle(currentChord[0] * (2 + i), 0.3, adaptiveVolume * 0.4);
+                            }, i * 50);
+                        }
+                    }, 200);
+                    
+                    // Layer 3: Impact celebration
+                    setTimeout(() => {
+                        this.createImpactThump(currentChord[0] * 0.5, 0.5, adaptiveVolume * 0.8);
+                    }, 300);
+                    
+                    // Layer 4: Resonance celebration
+                    setTimeout(() => {
+                        this.createResonance(currentChord[0] * 0.75, 1.0, adaptiveVolume * 0.6);
+                    }, 400);
+                    
                     this.triggerSidechain();
             },
             gameOver: () => {
@@ -2227,6 +2656,10 @@ class TetrisGame {
             }
             
             if (dy > 0) {
+                // Add anticipation sound before placing piece
+                const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                this.createAnticipation(currentChord[0] * 0.8, 0.1, 0.15);
+                
                 this.placePiece();
             }
         }
@@ -2365,6 +2798,10 @@ class TetrisGame {
         
         // Add contact/landing sound effect
         this.sounds.landing();
+        
+        // Add micro-interaction for subtle feedback
+        const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+        this.createMicroInteraction(currentChord[1] * 1.5, 0.05, 0.1);
         
         this.clearLines();
         this.spawnPiece();
