@@ -433,6 +433,7 @@ body {
     align-items: center;
     margin-bottom: 1rem;
     padding: 0 1rem;
+    position: relative;
 }
 
 .game-title {
@@ -458,6 +459,46 @@ body {
     border: 2px solid var(--accent-glow);
     border-radius: 8px;
     background: rgba(0, 255, 255, 0.1);
+}
+
+.metronome-indicator {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.beat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(0, 255, 255, 0.3);
+    transition: all 0.1s ease;
+}
+
+.beat-dot.active {
+    background: #00ffff;
+    box-shadow: 0 0 15px #00ffff;
+    transform: scale(1.5);
+}
+
+@keyframes metronome-pulse {
+    0% { 
+        background: rgba(0, 255, 255, 0.3);
+        transform: scale(1);
+    }
+    50% { 
+        background: #00ffff;
+        box-shadow: 0 0 15px #00ffff;
+        transform: scale(1.5);
+    }
+    100% { 
+        background: rgba(0, 255, 255, 0.3);
+        transform: scale(1);
+    }
 }
 
 .game-container {

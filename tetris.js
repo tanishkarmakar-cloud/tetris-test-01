@@ -416,56 +416,192 @@ class TetrisGame {
     }
     
     /**
-     * Initialize sound system
+     * Initialize advanced sound system with reverb and metronome
      */
     initSounds() {
         try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
-            const createTone = (frequency, duration, type = 'square', volume = 0.1) => {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
+            // Create reverb effect
+            this.createReverb = () => {
+                const convolver = this.audioContext.createConvolver();
+                const reverbGain = this.audioContext.createGain();
                 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
+                // Create impulse response for reverb
+                const length = this.audioContext.sampleRate * 2;
+                const impulse = this.audioContext.createBuffer(2, length, this.audioContext.sampleRate);
                 
-                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                for (let channel = 0; channel < 2; channel++) {
+                    const channelData = impulse.getChannelData(channel);
+                    for (let i = 0; i < length; i++) {
+                        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+                    }
+                }
+                
+                convolver.buffer = impulse;
+                reverbGain.gain.value = 0.3;
+                
+                convolver.connect(reverbGain);
+                reverbGain.connect(this.audioContext.destination);
+                
+                return { convolver, reverbGain };
+            };
+            
+            // Create metronome
+            this.metronomeInterval = null;
+            this.beatCount = 0;
+            this.bpm = 120; // 80s techno tempo
+            
+            this.startMetronome = () => {
+                if (this.metronomeInterval) return;
+                
+                const beatInterval = 60000 / this.bpm; // Convert BPM to milliseconds
+                this.metronomeInterval = setInterval(() => {
+                    this.playMetronomeBeat();
+                    this.beatCount++;
+                }, beatInterval);
+            };
+            
+            this.stopMetronome = () => {
+                if (this.metronomeInterval) {
+                    clearInterval(this.metronomeInterval);
+                    this.metronomeInterval = null;
+                }
+            };
+            
+            this.playMetronomeBeat = () => {
+                const isStrongBeat = this.beatCount % 4 === 0;
+                const frequency = isStrongBeat ? 80 : 60;
+                const volume = isStrongBeat ? 0.15 : 0.08;
+                
+                this.createEtherealTone(frequency, 0.1, 'sine', volume, true);
+                this.updateMetronomeVisual(this.beatCount % 4);
+            };
+            
+            // Create ethereal tone with reverb
+            this.createEtherealTone = (frequency, duration, type = 'sine', volume = 0.1, isMetronome = false) => {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                const reverb = this.createReverb();
+                
+                // Set up filter for ethereal sound
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(2000, this.audioContext.currentTime);
+                filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                
+                // Connect audio chain
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(reverb.convolver);
+                
+                // Set oscillator properties
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
                 oscillator.type = type;
                 
-                gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                // Add slight detuning for ethereal effect
+                if (!isMetronome) {
+                    oscillator.detune.setValueAtTime(Math.random() * 10 - 5, this.audioContext.currentTime);
+                }
                 
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + duration);
+                // Envelope
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                
+                // Add subtle frequency modulation for otherworldly feel
+                if (!isMetronome) {
+                    oscillator.frequency.exponentialRampToValueAtTime(
+                        frequency * (1 + Math.sin(this.audioContext.currentTime * 0.5) * 0.1),
+                        this.audioContext.currentTime + duration * 0.5
+                    );
+                }
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + duration);
+            };
+            
+            // 80s German New Age Techno scales
+            this.scales = {
+                dorian: [261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16], // C Dorian
+                phrygian: [261.63, 277.18, 311.13, 329.63, 392.00, 415.30, 466.16], // C Phrygian
+                lydian: [261.63, 293.66, 329.63, 369.99, 392.00, 440.00, 493.88] // C Lydian
+            };
+            
+            this.currentScale = 'dorian';
+            this.scaleIndex = 0;
+            
+            this.getNextNote = () => {
+                const scale = this.scales[this.currentScale];
+                const note = scale[this.scaleIndex % scale.length];
+                this.scaleIndex++;
+                return note;
             };
             
             return {
-                move: () => createTone(200, 0.1, 'square'),
-                rotate: () => createTone(300, 0.1, 'square'),
-                drop: () => createTone(150, 0.2, 'sawtooth'),
+                move: () => {
+                    const note = this.getNextNote();
+                    this.createEtherealTone(note, 0.15, 'sine', 0.12);
+                },
+                rotate: () => {
+                    const note = this.getNextNote() * 1.5;
+                    this.createEtherealTone(note, 0.2, 'triangle', 0.15);
+                },
+                drop: () => {
+                    const note = this.getNextNote() * 0.5;
+                    this.createEtherealTone(note, 0.3, 'sawtooth', 0.18);
+                },
                 lineClear: () => {
-                    createTone(400, 0.1, 'square');
-                    setTimeout(() => createTone(500, 0.1, 'square'), 50);
-                    setTimeout(() => createTone(600, 0.1, 'square'), 100);
-                    setTimeout(() => createTone(700, 0.2, 'square'), 150);
+                    // Arpeggiated chord progression
+                    const scale = this.scales[this.currentScale];
+                    const chord = [scale[0], scale[2], scale[4], scale[6]];
+                    
+                    chord.forEach((note, index) => {
+                        setTimeout(() => {
+                            this.createEtherealTone(note, 0.4, 'sine', 0.2);
+                        }, index * 100);
+                    });
+                    
+                    // Change scale for next sequence
+                    const scales = Object.keys(this.scales);
+                    this.currentScale = scales[(scales.indexOf(this.currentScale) + 1) % scales.length];
+                    this.scaleIndex = 0;
                 },
                 gameOver: () => {
-                    createTone(200, 0.5, 'sawtooth');
-                    setTimeout(() => createTone(150, 0.5, 'sawtooth'), 200);
-                    setTimeout(() => createTone(100, 0.5, 'sawtooth'), 400);
+                    // Descending ethereal sequence
+                    const frequencies = [523.25, 466.16, 415.30, 369.99, 329.63, 293.66, 261.63];
+                    frequencies.forEach((freq, index) => {
+                        setTimeout(() => {
+                            this.createEtherealTone(freq, 0.8, 'sine', 0.25);
+                        }, index * 200);
+                    });
                 },
-                button: () => createTone(800, 0.1, 'square'),
+                button: () => {
+                    const note = this.getNextNote() * 2;
+                    this.createEtherealTone(note, 0.1, 'square', 0.1);
+                },
                 levelUp: () => {
-                    createTone(500, 0.2, 'square');
-                    setTimeout(() => createTone(600, 0.2, 'square'), 100);
-                    setTimeout(() => createTone(700, 0.2, 'square'), 200);
+                    // Ascending ethereal sequence
+                    const scale = this.scales[this.currentScale];
+                    const sequence = scale.slice(0, 5);
+                    
+                    sequence.forEach((note, index) => {
+                        setTimeout(() => {
+                            this.createEtherealTone(note, 0.3, 'sine', 0.15);
+                        }, index * 150);
+                    });
                 },
                 tetris: () => {
-                    createTone(600, 0.1, 'square');
-                    setTimeout(() => createTone(800, 0.1, 'square'), 50);
-                    setTimeout(() => createTone(1000, 0.1, 'square'), 100);
-                    setTimeout(() => createTone(1200, 0.3, 'square'), 150);
-                }
+                    // Special Tetris chord progression
+                    const tetrisChord = [261.63, 329.63, 392.00, 523.25, 659.25];
+                    tetrisChord.forEach((note, index) => {
+                        setTimeout(() => {
+                            this.createEtherealTone(note, 0.5, 'sine', 0.22);
+                        }, index * 80);
+                    });
+                },
+                startMetronome: () => this.startMetronome(),
+                stopMetronome: () => this.stopMetronome()
             };
         } catch (error) {
             console.warn('Audio context not available:', error);
@@ -477,7 +613,9 @@ class TetrisGame {
                 gameOver: () => {},
                 button: () => {},
                 levelUp: () => {},
-                tetris: () => {}
+                tetris: () => {},
+                startMetronome: () => {},
+                stopMetronome: () => {}
             };
         }
     }
@@ -1061,6 +1199,7 @@ class TetrisGame {
         this.gameRunning = true;
         this.gamePaused = false;
         this.dropTime = Date.now();
+        this.sounds.startMetronome();
         this.gameLoop();
     }
     
@@ -1069,6 +1208,7 @@ class TetrisGame {
      */
     pauseGame() {
         this.gamePaused = true;
+        this.sounds.stopMetronome();
         if (this.gameLoopId) {
             cancelAnimationFrame(this.gameLoopId);
             this.gameLoopId = null;
@@ -1093,6 +1233,7 @@ class TetrisGame {
     resetGame() {
         this.gameRunning = false;
         this.gamePaused = false;
+        this.sounds.stopMetronome();
         if (this.gameLoopId) {
             cancelAnimationFrame(this.gameLoopId);
             this.gameLoopId = null;
@@ -1118,6 +1259,7 @@ class TetrisGame {
     gameOver() {
         this.gameRunning = false;
         this.gamePaused = false;
+        this.sounds.stopMetronome();
         if (this.gameLoopId) {
             cancelAnimationFrame(this.gameLoopId);
             this.gameLoopId = null;
@@ -1263,6 +1405,19 @@ class TetrisGame {
         const gameScreen = document.getElementById('gameScreen');
         gameScreen.classList.add('screen-flicker');
         setTimeout(() => gameScreen.classList.remove('screen-flicker'), 100);
+    }
+    
+    updateMetronomeVisual(beatIndex) {
+        const metronomeIndicator = document.getElementById('metronomeIndicator');
+        if (!metronomeIndicator) return;
+        
+        const dots = metronomeIndicator.querySelectorAll('.beat-dot');
+        dots.forEach((dot, index) => {
+            dot.classList.remove('active');
+            if (index === beatIndex) {
+                dot.classList.add('active');
+            }
+        });
     }
     
     // High score management
