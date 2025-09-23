@@ -309,11 +309,6 @@ class TetrisGame {
         document.getElementById('mobileHold').addEventListener('click', () => this.handleMobileInput('hold'));
         document.getElementById('mobileDrop').addEventListener('click', () => this.handleMobileInput('drop'));
         
-        // Test audio button
-        document.getElementById('testAudioBtn').addEventListener('click', () => {
-            this.initAudioContext();
-            this.sounds.test();
-        });
         
         // Keyboard events
         document.addEventListener('keydown', (e) => {
@@ -450,14 +445,11 @@ class TetrisGame {
                     
                     // Resume audio context if suspended
                     if (this.audioContext.state === 'suspended') {
-                        this.audioContext.resume().then(() => {
-                            this.updateAudioStatus();
-                        });
-                    } else {
-                        this.updateAudioStatus();
+                        this.audioContext.resume();
                     }
                     
                     this.audioInitialized = true;
+                    this.updateAudioStatus();
                 } catch (error) {
                     console.warn('Failed to initialize audio context:', error);
                 }
@@ -526,25 +518,28 @@ class TetrisGame {
                     if (!this.audioInitialized || !this.audioContext) return;
                 }
                 
-                const oscillator = this.audioContext.createOscillator();
-                const gainNode = this.audioContext.createGain();
-                const reverb = this.createReverb();
-                
-                // Connect audio chain with reverb
-                oscillator.connect(gainNode);
-                gainNode.connect(reverb.convolver);
-                
-                // Set oscillator properties
-                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-                oscillator.type = type;
-                
-                // Simple envelope
-                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
-                
-                oscillator.start(this.audioContext.currentTime);
-                oscillator.stop(this.audioContext.currentTime + duration);
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    // Simple connection without reverb for now
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    // Set oscillator properties
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = type;
+                    
+                    // Simple envelope
+                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + duration);
+                } catch (error) {
+                    console.warn('Audio playback error:', error);
+                }
             };
             
             // 80s German New Age Techno scales
@@ -866,6 +861,47 @@ class TetrisGame {
         
         this.clearLines();
         this.spawnPiece();
+    }
+    
+    /**
+     * Spawn a new piece
+     */
+    spawnPiece() {
+        // If no next piece, generate one
+        if (!this.nextPiece) {
+            this.nextPiece = this.getRandomPiece();
+        }
+        
+        // Set current piece to next piece
+        this.currentPiece = {
+            ...this.nextPiece,
+            x: Math.floor((this.BOARD_WIDTH - this.nextPiece.shape[0].length) / 2),
+            y: 0
+        };
+        
+        // Generate new next piece
+        this.nextPiece = this.getRandomPiece();
+        
+        // Reset hold ability
+        this.canHold = true;
+        
+        // Check for game over
+        if (this.checkCollision(this.currentPiece, 0, 0)) {
+            this.gameOver();
+            return;
+        }
+        
+        // Update displays
+        this.drawNextPiece();
+        this.updateDisplay();
+    }
+    
+    /**
+     * Get a random piece
+     */
+    getRandomPiece() {
+        const randomIndex = Math.floor(Math.random() * this.pieces.length);
+        return { ...this.pieces[randomIndex] };
     }
     
     /**
@@ -1200,6 +1236,10 @@ class TetrisGame {
         this.gamePaused = false;
         this.dropTime = Date.now();
         this.sounds.startMetronome();
+        
+        // Spawn the first piece
+        this.spawnPiece();
+        
         this.gameLoop();
     }
     
