@@ -591,6 +591,11 @@ class TetrisGame {
                 // Create sidechain compression gain node
                 this.sidechainGain = this.audioContext.createGain();
                 this.sidechainGain.connect(this.audioContext.destination);
+                
+                // Master gain node to prevent clipping when sounds layer
+                this.masterGain = this.audioContext.createGain();
+                this.masterGain.gain.setValueAtTime(0.7, this.audioContext.currentTime); // Prevent clipping
+                this.masterGain.connect(this.audioContext.destination);
                 this.sidechainGain.gain.setValueAtTime(1, this.audioContext.currentTime);
                 
                 const beatInterval = 60000 / this.bpm; // Convert BPM to milliseconds
@@ -662,11 +667,15 @@ class TetrisGame {
             
             // Sidechain compression effect
             this.triggerSidechain = () => {
-                if (!this.sidechainGain) return;
+                if (!this.sidechainGain || !this.masterGain) return;
                 
                 const now = this.audioContext.currentTime;
                 this.sidechainGain.gain.setValueAtTime(0.3, now);
                 this.sidechainGain.gain.exponentialRampToValueAtTime(1, now + 0.2);
+                
+                // Also duck the master gain slightly for breathing effect
+                this.masterGain.gain.setValueAtTime(0.5, now);
+                this.masterGain.gain.linearRampToValueAtTime(0.7, now + 0.15);
             };
             
             // Rhythmic gating effect
@@ -1528,7 +1537,7 @@ class TetrisGame {
                 this.classicalSystem.active = false;
             };
             
-            // Create harmonious note - simple, clean, and musical
+            // Create harmonious note - simple, clean, and musical with natural layering
             this.createHarmoniousNote = (frequency, duration, volume, type = 'sine') => {
                 if (!this.audioInitialized || !this.audioContext) return;
                 
@@ -1551,18 +1560,21 @@ class TetrisGame {
                     oscillator.connect(filter);
                     filter.connect(gainNode);
                     gainNode.connect(reverb.convolver);
-                    reverb.reverbGain.connect(this.sidechainGain || this.audioContext.destination);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
                     
-                    // Simple, clean envelope
+                    // Natural envelope with extended fade for layering
                     const now = this.audioContext.currentTime;
+                    const extendedDuration = duration * 2; // Allow sounds to layer longer
+                    
                     gainNode.gain.setValueAtTime(0, now);
                     gainNode.gain.linearRampToValueAtTime(volume, now + 0.05);
-                    gainNode.gain.linearRampToValueAtTime(volume * 0.3, now + duration * 0.7);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.4, now + duration * 0.6);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.1, now + duration);
+                    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + extendedDuration);
                     
-                    // Start oscillator
+                    // Start oscillator and let it fade naturally
                     oscillator.start(now);
-                    oscillator.stop(now + duration);
+                    oscillator.stop(now + extendedDuration);
                 } catch (error) {
                     console.warn('Harmonious note error:', error);
                 }
@@ -1805,7 +1817,7 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[1]; // Use middle voice of current chord
                     
-                    this.createHarmoniousNote(freq, 0.2, 0.6, 'sine');
+                    this.createHarmoniousNote(freq, 0.2, 0.4, 'sine');
                     this.triggerSidechain();
                 },
                 rotate: () => {
@@ -1813,7 +1825,7 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[2]; // Use top voice of current chord
                     
-                    this.createHarmoniousNote(freq, 0.25, 0.7, 'triangle');
+                    this.createHarmoniousNote(freq, 0.25, 0.5, 'triangle');
                     this.triggerSidechain();
                 },
                 drop: () => {
@@ -1821,7 +1833,7 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[0]; // Bass note
                     
-                    this.createHarmoniousNote(freq, 0.3, 0.8, 'sine');
+                    this.createHarmoniousNote(freq, 0.3, 0.6, 'sine');
                     this.triggerSidechain();
                 },
             lineClear: () => {
@@ -1829,7 +1841,7 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     currentChord.forEach((freq, index) => {
                         setTimeout(() => {
-                            this.createHarmoniousNote(freq, 0.4, 0.9, 'triangle');
+                            this.createHarmoniousNote(freq, 0.4, 0.6, 'triangle');
                         }, index * 100); // Faster, more rhythmic
                     });
                     this.triggerSidechain();
@@ -1854,7 +1866,7 @@ class TetrisGame {
                     
                     ascendingScale.forEach((freq, index) => {
                         setTimeout(() => {
-                            this.createHarmoniousNote(freq, 0.5, 1.2, 'triangle');
+                            this.createHarmoniousNote(freq, 0.5, 0.8, 'triangle');
                         }, index * 80); // Faster, more rhythmic
                     });
                 },
@@ -1863,14 +1875,14 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const bassFreq = currentChord[0]; // Bass note
                     
-                    this.createHarmoniousNote(bassFreq, 0.4, 0.8, 'sine');
+                    this.createHarmoniousNote(bassFreq, 0.4, 0.6, 'sine');
                 },
                 contact: () => {
                     // Harmonious contact sound
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[1]; // Middle voice
                     
-                    this.createHarmoniousNote(freq, 0.1, 0.3, 'triangle');
+                    this.createHarmoniousNote(freq, 0.1, 0.2, 'triangle');
                 },
                 startMetronome: () => this.startMetronome(),
                 stopMetronome: () => this.stopMetronome()
