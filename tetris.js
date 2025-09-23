@@ -1302,8 +1302,8 @@ class TetrisGame {
                     filter.connect(gainNode);
                     gainNode.connect(this.sidechainGain || this.audioContext.destination);
                     
-                    // Volume based on voice (bass louder, higher voices softer)
-                    const volume = (3 - index) * 0.02;
+                    // Volume based on voice (bass louder, higher voices softer) - reduced for prominence
+                    const volume = (3 - index) * 0.01;
                     gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
                     
                     // Start oscillator
@@ -1327,7 +1327,7 @@ class TetrisGame {
             this.playThemeNote = () => {
                 const themeNote = this.classicalSystem.theme[this.classicalSystem.themeIndex];
                 const duration = 0.4;
-                const volume = 0.15;
+                const volume = 0.08; // Reduced for prominence
                 
                 // Create theme note with classical characteristics
                 this.createClassicalNote(themeNote, duration, volume, 'triangle');
@@ -1424,6 +1424,84 @@ class TetrisGame {
                     oscillator.stop(this.audioContext.currentTime + duration);
                 } catch (error) {
                     console.warn('Classical note error:', error);
+                }
+            };
+            
+            // Enhanced musical note with articulations and musical phrasing
+            this.createMusicalNote = (frequency, duration, volume, type = 'triangle', articulation = 'legato') => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    
+                    // Set up oscillator
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = type;
+                    
+                    // Add vibrato for musical expression
+                    lfo.frequency.setValueAtTime(5, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.01, this.audioContext.currentTime);
+                    
+                    // Connect vibrato
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    
+                    // Filter for classical warmth with musical character
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 3, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(3, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.sidechainGain || this.audioContext.destination);
+                    
+                    // Musical articulations
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    
+                    switch (articulation) {
+                        case 'staccato':
+                            // Short, detached notes
+                            gainNode.gain.linearRampToValueAtTime(volume, now + 0.02);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + duration * 0.3);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.6);
+                            break;
+                        case 'accent':
+                            // Accented notes with emphasis
+                            gainNode.gain.linearRampToValueAtTime(volume * 1.2, now + 0.01);
+                            gainNode.gain.linearRampToValueAtTime(volume, now + 0.05);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + duration * 0.8);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                            break;
+                        case 'marcato':
+                            // Strong, marked notes
+                            gainNode.gain.linearRampToValueAtTime(volume * 1.3, now + 0.005);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.9, now + 0.1);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + duration * 0.7);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                            break;
+                        case 'legato':
+                        default:
+                            // Smooth, connected notes
+                            gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
+                            gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + duration * 0.8);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                            break;
+                    }
+                    
+                    // Start oscillators
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Musical note error:', error);
                 }
             };
             
@@ -1676,34 +1754,48 @@ class TetrisGame {
                     this.createTechnoSound(440, 0.5, 'sine', 0.3);
                 },
                 move: () => {
-                    // Use scale tones for harmonic coherence
+                    // Use scale tones for harmonic coherence - more prominent
                     const scaleIndex = Math.floor(Math.random() * this.classicalSystem.scale.length);
                     const freq = this.classicalSystem.scale[scaleIndex];
-                    this.createClassicalNote(freq, 0.2, 0.15, 'triangle');
+                    
+                    // Add musical context - vary articulation based on theme position
+                    const articulation = this.classicalSystem.themeIndex % 2 === 0 ? 'staccato' : 'legato';
+                    const volume = 0.4 + (this.classicalSystem.dynamics * 0.2); // Respond to dynamics
+                    
+                    this.createMusicalNote(freq, 0.3, volume, 'triangle', articulation);
                     this.triggerSidechain();
                 },
                 rotate: () => {
-                    // Use chord tones for harmonic coherence
+                    // Use chord tones for harmonic coherence - more prominent
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const chordIndex = Math.floor(Math.random() * currentChord.length);
                     const freq = currentChord[chordIndex];
-                    this.createClassicalNote(freq, 0.25, 0.18, 'triangle');
+                    
+                    // Musical context - accent on strong beats
+                    const volume = 0.5 + (this.classicalSystem.dynamics * 0.3);
+                    const articulation = this.classicalSystem.themeIndex === 0 || this.classicalSystem.themeIndex === 4 ? 'marcato' : 'accent';
+                    
+                    this.createMusicalNote(freq, 0.4, volume, 'triangle', articulation);
                     this.triggerSidechain();
                 },
                 drop: () => {
-                    // Use bass note for harmonic foundation
+                    // Use bass note for harmonic foundation - more prominent
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[0]; // Bass note
-                    this.createClassicalNote(freq, 0.3, 0.2, 'sine');
+                    
+                    // Musical context - bass emphasis
+                    const volume = 0.6 + (this.classicalSystem.dynamics * 0.4);
+                    
+                    this.createMusicalNote(freq, 0.5, volume, 'sine', 'marcato');
                     this.triggerSidechain();
                 },
             lineClear: () => {
-                    // Classical chord arpeggio for line clear
+                    // Classical chord arpeggio for line clear - more prominent
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     currentChord.forEach((freq, index) => {
                         setTimeout(() => {
-                            this.createClassicalNote(freq, 0.4, 0.25, 'triangle');
-                        }, index * 100);
+                            this.createMusicalNote(freq, 0.6, 0.7, 'triangle', 'accent');
+                        }, index * 120);
                     });
                     this.triggerSidechain();
             },
@@ -1721,14 +1813,14 @@ class TetrisGame {
                     this.createTechnoSound(600, 0.4, 'triangle', 0.25);
                 },
                 tetris: () => {
-                    // Special Tetris - ascending scale for triumph
+                    // Special Tetris - ascending scale for triumph - very prominent
                     const scale = this.classicalSystem.scale;
                     const ascendingScale = scale.slice(0, 4).concat(scale.slice(0, 4).map(f => f * 2));
                     
                     ascendingScale.forEach((freq, index) => {
                         setTimeout(() => {
-                            this.createClassicalNote(freq, 0.3, 0.3, 'triangle');
-                        }, index * 80);
+                            this.createMusicalNote(freq, 0.5, 0.8, 'triangle', 'marcato');
+                        }, index * 100);
                     });
                 },
                 startMetronome: () => this.startMetronome(),
