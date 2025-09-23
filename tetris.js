@@ -640,6 +640,8 @@ class TetrisGame {
             }
         }
         
+        // Add rotation animation
+        this.addPieceRotateEffect();
         this.draw();
         this.addScreenShake(0.3);
     }
@@ -763,19 +765,21 @@ class TetrisGame {
             }
             
             this.score += lineScore * this.level;
+            const oldLevel = this.level;
             this.level = Math.floor(this.lines / 10) + 1;
             this.dropInterval = Math.max(50, 1000 - (this.level - 1) * 50);
             
-            // Visual effects
+            // Enhanced visual effects
             this.addScreenShake(linesCleared > 2 ? 3 : 2);
-            this.flashScreen();
+            this.addLineClearFlash();
+            this.addScreenFlicker();
             this.createExplosion(
                 this.canvas.offsetLeft + this.canvas.width / 2,
                 this.canvas.offsetTop + this.canvas.height / 2,
                 linesCleared
             );
             
-            // Score popup
+            // Score popup with enhanced animation
             this.createScorePopup(lineScore * this.level, this.canvas.offsetLeft + this.canvas.width / 2, this.canvas.offsetTop + this.canvas.height / 2);
             
             // Sound effects
@@ -785,8 +789,10 @@ class TetrisGame {
                 this.sounds.lineClear();
             }
             
-            if (this.level > Math.floor((this.lines - linesCleared) / 10) + 1) {
+            // Level up celebration
+            if (this.level > oldLevel) {
                 this.sounds.levelUp();
+                this.addLevelUpCelebration();
             }
             
             this.updateDisplay();
@@ -1229,7 +1235,7 @@ class TetrisGame {
     
     createScorePopup(score, x, y) {
         const popup = document.createElement('div');
-        popup.className = 'score-popup';
+        popup.className = 'score-popup score-popup-bounce';
         popup.textContent = '+' + score;
         popup.style.left = x + 'px';
         popup.style.top = y + 'px';
@@ -1240,6 +1246,30 @@ class TetrisGame {
                 popup.parentNode.removeChild(popup);
             }
         }, 1500);
+    }
+    
+    addPieceRotateEffect() {
+        const gameBoard = document.querySelector('.game-board');
+        gameBoard.classList.add('piece-rotate');
+        setTimeout(() => gameBoard.classList.remove('piece-rotate'), 300);
+    }
+    
+    addLineClearFlash() {
+        const gameBoard = document.querySelector('.game-board');
+        gameBoard.classList.add('line-clear-flash');
+        setTimeout(() => gameBoard.classList.remove('line-clear-flash'), 600);
+    }
+    
+    addLevelUpCelebration() {
+        const gameContainer = document.querySelector('.game-container');
+        gameContainer.classList.add('level-up-celebration');
+        setTimeout(() => gameContainer.classList.remove('level-up-celebration'), 800);
+    }
+    
+    addScreenFlicker() {
+        const gameScreen = document.getElementById('gameScreen');
+        gameScreen.classList.add('screen-flicker');
+        setTimeout(() => gameScreen.classList.remove('screen-flicker'), 100);
     }
     
     // High score management
