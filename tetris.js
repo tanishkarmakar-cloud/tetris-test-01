@@ -606,7 +606,7 @@ class TetrisGame {
                 
                 // Master gain node to prevent clipping when sounds layer
                 this.masterGain = this.audioContext.createGain();
-                this.masterGain.gain.setValueAtTime(0.7, this.audioContext.currentTime); // Prevent clipping
+                this.masterGain.gain.setValueAtTime(0.4, this.audioContext.currentTime); // Prevent clipping
                 
                 // Dynamic range compressor for professional sound
                 this.compressor = this.audioContext.createDynamicsCompressor();
@@ -705,8 +705,8 @@ class TetrisGame {
                 this.sidechainGain.gain.exponentialRampToValueAtTime(1, now + 0.2);
                 
                 // Also duck the master gain slightly for breathing effect
-                this.masterGain.gain.setValueAtTime(0.5, now);
-                this.masterGain.gain.linearRampToValueAtTime(0.7, now + 0.15);
+                this.masterGain.gain.setValueAtTime(0.25, now);
+                this.masterGain.gain.linearRampToValueAtTime(0.4, now + 0.15);
             };
             
             // Rhythmic gating effect
@@ -1627,8 +1627,8 @@ class TetrisGame {
                 this.classicalSystem.adaptiveTempo = baseTempo + tempoBoost;
                 
                 // Update adaptive volume
-                const baseVolume = 0.7;
-                const volumeBoost = this.classicalSystem.energy * 0.3;
+                const baseVolume = 0.4;
+                const volumeBoost = this.classicalSystem.energy * 0.2;
                 this.classicalSystem.adaptiveVolume = baseVolume + volumeBoost;
             };
             
@@ -2085,6 +2085,294 @@ class TetrisGame {
                 }
             };
             
+            // Create ethereal tone for trance-like atmosphere
+            this.createEtherealTone = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    const reverb = this.createReverb();
+                    
+                    // Ethereal tone with gentle vibrato
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Gentle vibrato for ethereal character
+                    lfo.frequency.setValueAtTime(3, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.02, this.audioContext.currentTime);
+                    
+                    // Soft low-pass filter for warmth
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Gentle envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + duration * 0.7);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Ethereal tone error:', error);
+                }
+            };
+            
+            // Create ethereal pad for atmospheric background
+            this.createEtherealPad = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    const reverb = this.createReverb();
+                    
+                    // Ethereal pad with slow modulation
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Slow modulation for pad character
+                    lfo.frequency.setValueAtTime(0.5, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.05, this.audioContext.currentTime);
+                    
+                    // Soft low-pass filter
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 1.5, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.3, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Very gentle envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.3);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + duration * 0.5);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Ethereal pad error:', error);
+                }
+            };
+            
+            // Create gentle sparkle for ethereal responsiveness
+            this.createGentleSparkle = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    
+                    // Gentle sparkle
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'triangle';
+                    
+                    // Gentle vibrato
+                    lfo.frequency.setValueAtTime(8, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.05, this.audioContext.currentTime);
+                    
+                    // Soft band-pass filter
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                    
+                    // Connect audio chain
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Gentle envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.02);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.4, now + duration * 0.6);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Gentle sparkle error:', error);
+                }
+            };
+            
+            // Create ethereal sweep for rotation feel
+            this.createEtherealSweep = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    const reverb = this.createReverb();
+                    
+                    // Ethereal sweep
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Gentle frequency sweep
+                    lfo.frequency.setValueAtTime(1, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.1, this.audioContext.currentTime);
+                    
+                    // Soft low-pass filter
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 1.8, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.4, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Gentle envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.5, now + duration * 0.8);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Ethereal sweep error:', error);
+                }
+            };
+            
+            // Create ethereal descent for falling motion
+            this.createEtherealDescent = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
+                    const reverb = this.createReverb();
+                    
+                    // Ethereal descent
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Gentle frequency descent
+                    lfo.frequency.setValueAtTime(0.8, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.15, this.audioContext.currentTime);
+                    
+                    // Soft low-pass filter
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 1.2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.3, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Gentle envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.2);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + duration * 0.7);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
+                } catch (error) {
+                    console.warn('Ethereal descent error:', error);
+                }
+            };
+            
+            // Create gentle resonance for depth
+            this.createGentleResonance = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const reverb = this.createReverb();
+                    
+                    // Gentle resonance
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Soft resonant filter
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 1.2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(2, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Very gentle envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.3);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + duration * 0.4);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.3, now + duration * 0.8);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + duration);
+                } catch (error) {
+                    console.warn('Gentle resonance error:', error);
+                }
+            };
+            
             // Create harmonious note - simple, clean, and musical with natural layering
             this.createHarmoniousNote = (frequency, duration, volume, type = 'sine') => {
                 if (!this.audioInitialized || !this.audioContext) return;
@@ -2364,7 +2652,7 @@ class TetrisGame {
                     this.createTechnoSound(440, 0.5, 'sine', 0.3);
                 },
                 move: () => {
-                    // Multi-layered move sound for maximum impact
+                    // Ethereal trance-like move sound
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[1]; // Use middle voice of current chord
                     
@@ -2372,24 +2660,21 @@ class TetrisGame {
                     this.trackAction('move');
                     
                     // Adaptive volume based on energy and tension
-                    const adaptiveVolume = 0.4 * this.classicalSystem.adaptiveVolume;
+                    const adaptiveVolume = 0.3 * this.classicalSystem.adaptiveVolume;
                     
-                    // Layer 1: Main harmonic tone
-                    this.createHarmoniousNote(freq, 0.2, adaptiveVolume, 'sine');
+                    // Layer 1: Main ethereal tone
+                    this.createEtherealTone(freq, 0.3, adaptiveVolume);
                     
-                    // Layer 2: Percussive click for tactile feedback
-                    this.createPercussiveClick(freq * 2, 0.05, adaptiveVolume * 0.3);
+                    // Layer 2: Soft pad for atmosphere
+                    this.createEtherealPad(freq * 0.5, 0.8, adaptiveVolume * 0.2);
                     
-                    // Layer 3: Low-frequency thump for impact
-                    this.createImpactThump(freq * 0.5, 0.15, adaptiveVolume * 0.2);
-                    
-                    // Layer 4: High-frequency sparkle for responsiveness
-                    this.createSparkle(freq * 4, 0.1, adaptiveVolume * 0.15);
+                    // Layer 3: Gentle sparkle for responsiveness
+                    this.createGentleSparkle(freq * 2, 0.2, adaptiveVolume * 0.15);
                     
                     this.triggerSidechain();
                 },
                 rotate: () => {
-                    // Multi-layered rotation sound with mechanical character
+                    // Ethereal trance-like rotation sound
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[2]; // Use top voice of current chord
                     
@@ -2397,24 +2682,24 @@ class TetrisGame {
                     this.trackAction('rotate');
                     
                     // Adaptive volume with tension boost
-                    const adaptiveVolume = 0.5 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.3);
+                    const adaptiveVolume = 0.4 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.2);
                     
-                    // Layer 1: Main harmonic tone
-                    this.createHarmoniousNote(freq, 0.25, adaptiveVolume, 'triangle');
+                    // Layer 1: Main ethereal tone
+                    this.createEtherealTone(freq, 0.4, adaptiveVolume);
                     
-                    // Layer 2: Mechanical whir for rotation feel
-                    this.createMechanicalWhir(freq * 1.5, 0.3, adaptiveVolume * 0.4);
+                    // Layer 2: Gentle sweep for rotation feel
+                    this.createEtherealSweep(freq * 1.2, 0.5, adaptiveVolume * 0.3);
                     
-                    // Layer 3: Gear click for mechanical feedback
-                    this.createGearClick(freq * 0.7, 0.08, adaptiveVolume * 0.25);
+                    // Layer 3: Soft pad for atmosphere
+                    this.createEtherealPad(freq * 0.8, 0.6, adaptiveVolume * 0.25);
                     
-                    // Layer 4: Harmonic sparkle for precision
-                    this.createSparkle(freq * 3, 0.15, adaptiveVolume * 0.2);
+                    // Layer 4: Gentle sparkle for precision
+                    this.createGentleSparkle(freq * 2.5, 0.3, adaptiveVolume * 0.2);
                     
                     this.triggerSidechain();
                 },
                 drop: () => {
-                    // Multi-layered drop sound with gravity and impact
+                    // Ethereal trance-like drop sound
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[0]; // Bass note
                     
@@ -2422,19 +2707,19 @@ class TetrisGame {
                     this.trackAction('drop');
                     
                     // Adaptive volume with energy boost
-                    const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.4);
+                    const adaptiveVolume = 0.5 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.3);
                     
-                    // Layer 1: Main harmonic tone
-                    this.createHarmoniousNote(freq, 0.3, adaptiveVolume, 'sine');
+                    // Layer 1: Main ethereal tone
+                    this.createEtherealTone(freq, 0.4, adaptiveVolume);
                     
-                    // Layer 2: Gravity whoosh for falling motion
-                    this.createGravityWhoosh(freq * 0.3, 0.4, adaptiveVolume * 0.5);
+                    // Layer 2: Gentle descent for falling motion
+                    this.createEtherealDescent(freq * 0.6, 0.6, adaptiveVolume * 0.4);
                     
-                    // Layer 3: Impact thump for landing
-                    this.createImpactThump(freq * 0.25, 0.2, adaptiveVolume * 0.6);
+                    // Layer 3: Soft pad for atmosphere
+                    this.createEtherealPad(freq * 0.4, 0.8, adaptiveVolume * 0.3);
                     
-                    // Layer 4: Resonance for depth
-                    this.createResonance(freq * 0.5, 0.6, adaptiveVolume * 0.3);
+                    // Layer 4: Gentle resonance for depth
+                    this.createGentleResonance(freq * 0.8, 1.0, adaptiveVolume * 0.25);
                     
                     this.triggerSidechain();
                 },
