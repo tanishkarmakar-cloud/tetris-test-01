@@ -606,7 +606,7 @@ class TetrisGame {
                 
                 // Master gain node to prevent clipping when sounds layer
                 this.masterGain = this.audioContext.createGain();
-                this.masterGain.gain.setValueAtTime(0.7, this.audioContext.currentTime); // Increased for prominence
+                this.masterGain.gain.setValueAtTime(0.5, this.audioContext.currentTime); // Reduced to prevent distortion
                 
                 // Dynamic range compressor for professional sound
                 this.compressor = this.audioContext.createDynamicsCompressor();
@@ -705,8 +705,8 @@ class TetrisGame {
                 this.sidechainGain.gain.exponentialRampToValueAtTime(1, now + 0.2);
                 
                 // Also duck the master gain slightly for breathing effect
-                this.masterGain.gain.setValueAtTime(0.4, now);
-                this.masterGain.gain.linearRampToValueAtTime(0.7, now + 0.15);
+                this.masterGain.gain.setValueAtTime(0.3, now);
+                this.masterGain.gain.linearRampToValueAtTime(0.5, now + 0.15);
             };
             
             // Rhythmic gating effect
@@ -754,67 +754,34 @@ class TetrisGame {
             
             this.playMetronomeBeat = () => {
                 const beatInBar = this.beatCount % 4;
-                const isKickBeat = beatInBar === 0 || beatInBar === 2; // Kick on 1 and 3
-                const isSnareBeat = beatInBar === 2; // Snare on 3
-                const isHiHatBeat = beatInBar === 1 || beatInBar === 3; // Hi-hats on 2 and 4
                 
-                // Reich-inspired fast-paced patterns
-                const sixteenthNote = this.beatCount % 16; // 16th note subdivision
-                const isSixteenthBeat = sixteenthNote % 4 === 0; // Every 4th 16th note
+                // Ambient pad progression - A minor chord
+                const padFreqs = [220, 330, 440, 660]; // A, E, A, E
+                const padFreq = padFreqs[beatInBar];
+                this.createAmbientBacking(padFreq, 2.0, 0.08);
                 
-                // Kick drum (bass) - on beats 1 and 3
-                if (isKickBeat) {
-                    this.createMetronomeSound(60, 0.3, 'sine', 0.4); // Deep kick
+                // Gentle kick on beats 1 and 3
+                if (beatInBar === 0 || beatInBar === 2) {
+                    this.createAmbientBacking(60, 0.5, 0.12);
                 }
                 
-                // Snare - on beat 3
-                if (isSnareBeat) {
-                    this.createMetronomeSound(200, 0.2, 'square', 0.3); // Snare
+                // Soft snare on beat 3
+                if (beatInBar === 2) {
+                    this.createAmbientBacking(200, 0.3, 0.08);
                 }
                 
-                // Hi-hats - on beats 2 and 4
-                if (isHiHatBeat) {
-                    this.createMetronomeSound(800, 0.1, 'square', 0.2); // Hi-hat
+                // Gentle hi-hats on beats 2 and 4
+                if (beatInBar === 1 || beatInBar === 3) {
+                    this.createAmbientBacking(800, 0.2, 0.05);
                 }
                 
-                // Open hi-hat on beat 4
-                if (beatInBar === 3) {
-                    this.createMetronomeSound(1200, 0.15, 'square', 0.15); // Open hi-hat
-                }
+                // Bass line - simple and clean
+                const bassFreq = beatInBar === 0 ? 55 : (beatInBar === 2 ? 73.42 : 65.4); // A, D, C#
+                this.createAmbientBacking(bassFreq, 1.0, 0.1);
                 
-                // Reich-style 16th note patterns
-                if (isSixteenthBeat) {
-                    const freq = 1000 + (sixteenthNote * 50); // Ascending pattern
-                    this.createMetronomeSound(freq, 0.05, 'square', 0.1);
-                }
-                
-                // Bass line - every beat with variation
-                const bassFreq = beatInBar === 0 ? 80 : (beatInBar === 2 ? 100 : 90);
-                this.createMetronomeSound(bassFreq, 0.4, 'sine', 0.25); // Bass line
-                
-                // Track bars for progression and add fills
+                // Track bars for simple progression
                 if (beatInBar === 0) {
                     this.barCount++;
-                    
-                // Add techno fills every 8 bars
-                if (this.barCount % 8 === 0) {
-                    this.addTechnoFill();
-                }
-                
-                // Add polyrhythmic elements every 4 bars
-                if (this.barCount % 4 === 0) {
-                    this.addPolyrhythmicElement();
-                }
-                
-                // Add Reich-style ethereal textures every 2 bars
-                if (this.barCount % 2 === 0) {
-                    this.addEtherealTexture();
-                }
-                
-                // Tempo variations for trance-like effect
-                if (this.barCount % 16 === 0) {
-                    this.addTempoVariation();
-                }
                 }
             };
             
@@ -823,13 +790,13 @@ class TetrisGame {
                 // Hi-hat roll
                 for (let i = 0; i < 8; i++) {
                     setTimeout(() => {
-                        this.createMetronomeSound(1000 + i * 100, 0.05, 'square', 0.1);
+                        this.createAmbientBacking(1000 + i * 100, 0.05, 0.1);
                     }, i * 50);
                 }
                 
                 // Bass drop
                 setTimeout(() => {
-                    this.createMetronomeSound(40, 0.5, 'sine', 0.3);
+                    this.createAmbientBacking(40, 0.5, 0.3);
                 }, 400);
             };
             
@@ -1627,8 +1594,8 @@ class TetrisGame {
                 this.classicalSystem.adaptiveTempo = baseTempo + tempoBoost;
                 
                 // Update adaptive volume
-                const baseVolume = 0.7;
-                const volumeBoost = this.classicalSystem.energy * 0.3;
+                const baseVolume = 0.5;
+                const volumeBoost = this.classicalSystem.energy * 0.2;
                 this.classicalSystem.adaptiveVolume = baseVolume + volumeBoost;
             };
             
@@ -2720,6 +2687,45 @@ class TetrisGame {
                 }
             };
             
+            // Create clean tone with reverb - simple and clean
+            this.createCleanTone = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
+                
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    const filter = this.audioContext.createBiquadFilter();
+                    const reverb = this.createReverb();
+                    
+                    // Clean tone
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Soft low-pass filter for warmth
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    oscillator.connect(filter);
+                    filter.connect(gainNode);
+                    gainNode.connect(reverb.convolver);
+                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
+                    
+                    // Clean envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.05);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + duration * 0.6);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + duration);
+                } catch (error) {
+                    console.warn('Clean tone error:', error);
+                }
+            };
+            
             // Create harmonious note - simple, clean, and musical with natural layering
             this.createHarmoniousNote = (frequency, duration, volume, type = 'sine') => {
                 if (!this.audioInitialized || !this.audioContext) return;
@@ -2813,43 +2819,54 @@ class TetrisGame {
                 }
             };
             
-            // Create techno drum sound with slight reverb
-            this.createMetronomeSound = (frequency, duration, type = 'sine', volume = 0.1) => {
-                if (!this.audioInitialized || !this.audioContext) {
-                    this.initAudioContext();
-                    if (!this.audioInitialized || !this.audioContext) return;
-                }
+            // Create ambient progressive backing track
+            this.createAmbientBacking = (frequency, duration, volume) => {
+                if (!this.audioInitialized || !this.audioContext) return;
                 
                 try {
                     const oscillator = this.audioContext.createOscillator();
                     const gainNode = this.audioContext.createGain();
                     const filter = this.audioContext.createBiquadFilter();
+                    const lfo = this.audioContext.createOscillator();
+                    const lfoGain = this.audioContext.createGain();
                     const reverb = this.createReverb();
                     
-                    // Connect audio chain through sidechain
+                    // Ambient backing
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    oscillator.type = 'sine';
+                    
+                    // Slow modulation for ambient character
+                    lfo.frequency.setValueAtTime(0.2, this.audioContext.currentTime);
+                    lfo.type = 'sine';
+                    lfoGain.gain.setValueAtTime(frequency * 0.05, this.audioContext.currentTime);
+                    
+                    // Soft low-pass filter for warmth
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(frequency * 1.2, this.audioContext.currentTime);
+                    filter.Q.setValueAtTime(0.3, this.audioContext.currentTime);
+                    
+                    // Connect audio chain with reverb
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscillator.frequency);
                     oscillator.connect(filter);
                     filter.connect(gainNode);
                     gainNode.connect(reverb.convolver);
-                    reverb.reverbGain.connect(this.sidechainGain || this.audioContext.destination);
+                    reverb.reverbGain.connect(this.audioContext.destination);
                     
-                    // Set oscillator properties
-                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-            oscillator.type = type;
-            
-                    // Add filter for techno character
-                    filter.type = 'lowpass';
-                    filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
-                    filter.Q.setValueAtTime(1, this.audioContext.currentTime);
+                    // Ambient envelope
+                    const now = this.audioContext.currentTime;
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(volume, now + 0.5);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + duration * 0.3);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + duration * 0.7);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
                     
-                    // Techno-style envelope
-                    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(volume * 0.5, this.audioContext.currentTime + 0.01); // Lower volume
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
-                    
-                    oscillator.start(this.audioContext.currentTime);
-                    oscillator.stop(this.audioContext.currentTime + duration);
+                    oscillator.start(now);
+                    lfo.start(now);
+                    oscillator.stop(now + duration);
+                    lfo.stop(now + duration);
                 } catch (error) {
-                    console.warn('Metronome audio error:', error);
+                    console.warn('Ambient backing error:', error);
                 }
             };
             
@@ -2999,86 +3016,50 @@ class TetrisGame {
                     this.createTechnoSound(440, 0.5, 'sine', 0.3);
                 },
                 move: () => {
-                    // Ethereal trance move with prominent impact
+                    // Clean move sound with reverb
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[1]; // Use middle voice of current chord
                     
                     // Track action for momentum
                     this.trackAction('move');
                     
-                    // Much more prominent volume
-                    const adaptiveVolume = 0.8 * this.classicalSystem.adaptiveVolume;
+                    // Clean volume
+                    const adaptiveVolume = 0.4 * this.classicalSystem.adaptiveVolume;
                     
-                    // Layer 1: Prominent ethereal tone with heavy reverb
-                    this.createTranceTone(freq, 0.4, adaptiveVolume);
-                    
-                    // Layer 2: Floating pad with slow sweep
-                    this.createFloatingPad(freq * 0.6, 1.2, adaptiveVolume * 0.6);
-                    
-                    // Layer 3: Ethereal sparkle with frequency sweep
-                    this.createTranceSparkle(freq * 2.5, 0.6, adaptiveVolume * 0.4);
-                    
-                    // Layer 4: Deep bass pulse for impact
-                    this.createBassPulse(freq * 0.3, 0.8, adaptiveVolume * 0.5);
+                    // Simple clean tone with reverb
+                    this.createCleanTone(freq, 0.3, adaptiveVolume);
                     
                     this.triggerSidechain();
                 },
                 rotate: () => {
-                    // Ethereal trance rotation with dramatic sweep
+                    // Clean rotate sound with reverb
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[2]; // Use top voice of current chord
                     
                     // Track action for momentum
                     this.trackAction('rotate');
                     
-                    // Much more prominent volume with tension boost
-                    const adaptiveVolume = 1.0 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.4);
+                    // Clean volume with slight tension boost
+                    const adaptiveVolume = 0.5 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.2);
                     
-                    // Layer 1: Prominent trance tone
-                    this.createTranceTone(freq, 0.6, adaptiveVolume);
-                    
-                    // Layer 2: Dramatic frequency sweep for rotation
-                    this.createDramaticSweep(freq * 0.8, 1.0, adaptiveVolume * 0.7);
-                    
-                    // Layer 3: Floating pad with modulation
-                    this.createFloatingPad(freq * 1.2, 1.5, adaptiveVolume * 0.5);
-                    
-                    // Layer 4: Ethereal sparkle cascade
-                    this.createSparkleCascade(freq * 3, 0.8, adaptiveVolume * 0.6);
-                    
-                    // Layer 5: Deep resonance for impact
-                    this.createDeepResonance(freq * 0.4, 1.2, adaptiveVolume * 0.4);
+                    // Simple clean tone with reverb
+                    this.createCleanTone(freq, 0.4, adaptiveVolume);
                     
                     this.triggerSidechain();
                 },
                 drop: () => {
-                    // Ethereal trance drop with dramatic impact
+                    // Clean drop sound with reverb
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[0]; // Bass note
                     
                     // Track action for momentum
                     this.trackAction('drop');
                     
-                    // Much more prominent volume with energy boost
-                    const adaptiveVolume = 1.2 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.5);
+                    // Clean volume with energy boost
+                    const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.3);
                     
-                    // Layer 1: Prominent trance tone
-                    this.createTranceTone(freq, 0.8, adaptiveVolume);
-                    
-                    // Layer 2: Dramatic frequency descent
-                    this.createDramaticDescent(freq * 0.5, 1.2, adaptiveVolume * 0.8);
-                    
-                    // Layer 3: Floating pad with deep modulation
-                    this.createFloatingPad(freq * 0.3, 1.8, adaptiveVolume * 0.7);
-                    
-                    // Layer 4: Ethereal sparkle cascade
-                    this.createSparkleCascade(freq * 2, 1.0, adaptiveVolume * 0.6);
-                    
-                    // Layer 5: Deep bass impact
-                    this.createBassPulse(freq * 0.2, 1.5, adaptiveVolume * 0.9);
-                    
-                    // Layer 6: Deep resonance for sustain
-                    this.createDeepResonance(freq * 0.6, 2.0, adaptiveVolume * 0.5);
+                    // Simple clean tone with reverb
+                    this.createCleanTone(freq, 0.5, adaptiveVolume);
                     
                     this.triggerSidechain();
                 },
