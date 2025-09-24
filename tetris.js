@@ -505,6 +505,9 @@ class TetrisGame {
             // Audio context will be created on first user interaction
             this.audioContext = null;
             this.audioInitialized = false;
+            this.activeAudioNodes = 0;
+            this.maxAudioNodes = 12; // Limit concurrent audio nodes for performance
+            this.audioNodePool = []; // Pool for reusing audio nodes
             
             // Initialize audio context on first user interaction
             this.initAudioContext = () => {
@@ -545,7 +548,7 @@ class TetrisGame {
                 }
                 
                 convolver.buffer = impulse;
-                reverbGain.gain.value = 1.5; // Maximum reverb level for atmospheric backing track
+                reverbGain.gain.value = 0.8; // Reduced reverb level to prevent distortion
                 
                 convolver.connect(reverbGain);
                 reverbGain.connect(this.audioContext.destination);
@@ -577,7 +580,7 @@ class TetrisGame {
                 }
                 
                 convolver.buffer = impulse;
-                reverbGain.gain.value = 2.0; // Maximum reverb level for atmospheric backing track
+                reverbGain.gain.value = 1.0; // Reduced reverb level to prevent distortion
                 
                 convolver.connect(reverbGain);
                 reverbGain.connect(this.masterGain || this.audioContext.destination);
@@ -715,7 +718,7 @@ class TetrisGame {
                 
                 // Master gain node to prevent clipping when sounds layer
                 this.masterGain = this.audioContext.createGain();
-                this.masterGain.gain.setValueAtTime(0.4, this.audioContext.currentTime); // Balanced volume for clean sound
+                this.masterGain.gain.setValueAtTime(0.25, this.audioContext.currentTime); // Reduced volume to prevent distortion
                 
                 // Dynamic range compressor for professional sound - optimized for high volumes
                 this.compressor = this.audioContext.createDynamicsCompressor();
@@ -769,9 +772,9 @@ class TetrisGame {
                 const frequencies = [110, 146.83, 174.61, 220]; // A minor chord
                 
                 frequencies.forEach((freq, index) => {
-                    const oscillator = this.audioContext.createOscillator();
-                    const gainNode = this.audioContext.createGain();
-                    const filter = this.audioContext.createBiquadFilter();
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
                     const reverb = this.createEtherealReverb();
                     
                     // Set up oscillator
@@ -3574,7 +3577,11 @@ class TetrisGame {
             this.createHarmoniousNote = (frequency, duration, volume, type = 'sine') => {
                 if (!this.audioInitialized || !this.audioContext) return;
                 
+                // Check audio node limit for performance
+                if (this.activeAudioNodes >= this.maxAudioNodes) return;
+                
                 try {
+                    this.activeAudioNodes++;
                     const oscillator = this.audioContext.createOscillator();
                     const gainNode = this.audioContext.createGain();
                     const filter = this.audioContext.createBiquadFilter();
@@ -3598,8 +3605,8 @@ class TetrisGame {
                     // Apply adaptive frequency response based on current spectrum
                     this.applyAdaptiveEQ(filter, frequency);
                     
-                    // Extended duration for gradual fade-out
-                    const soundDuration = Math.max(duration * 2, 0.6);
+                    // Reduced duration for better performance
+                    const soundDuration = Math.max(duration * 1.5, 0.5);
                     
                     // Smooth envelope with fade-in and gradual fade-out
                     const now = this.audioContext.currentTime;
@@ -3621,12 +3628,15 @@ class TetrisGame {
                             oscillator.disconnect();
                             filter.disconnect();
                             gainNode.disconnect();
+                            this.activeAudioNodes--;
                         } catch (e) {
                             // Ignore cleanup errors
+                            this.activeAudioNodes--;
                         }
                     }, soundDuration * 1000 + 200);
                 } catch (error) {
                     console.warn('Harmonious note error:', error);
+                    this.activeAudioNodes--;
                 }
             };
             
@@ -3827,7 +3837,11 @@ class TetrisGame {
                     if (!this.audioInitialized || !this.audioContext || this.audioContext.state !== 'running') return;
                 }
                 
+                // Check audio node limit for performance
+                if (this.activeAudioNodes >= this.maxAudioNodes) return;
+                
                 try {
+                    this.activeAudioNodes++;
                     const oscillator = this.audioContext.createOscillator();
                     const gainNode = this.audioContext.createGain();
                     const filter = this.audioContext.createBiquadFilter();
@@ -3835,7 +3849,7 @@ class TetrisGame {
                     
                     // Set up oscillator with organ-like character
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-                    oscillator.type = type;
+            oscillator.type = type;
             
                     // Add detuning for organ warmth
                     if (!isMetronome) {
@@ -3852,8 +3866,8 @@ class TetrisGame {
                     filter.connect(gainNode);
                     gainNode.connect(reverb.convolver);
                     
-                    // Extended duration for gradual fade-out
-                    const soundDuration = Math.max(duration * 2, 0.8);
+                    // Reduced duration for better performance
+                    const soundDuration = Math.max(duration * 1.5, 0.6);
                     
                     // Fade-in and fade-out timing based on interaction type
                     const attackTime = isPlayerInteraction ? 0.02 : 0.05; // Quicker for player interaction
@@ -3879,12 +3893,15 @@ class TetrisGame {
                             oscillator.disconnect();
                             filter.disconnect();
                             gainNode.disconnect();
+                            this.activeAudioNodes--;
                         } catch (e) {
                             // Ignore cleanup errors
+                            this.activeAudioNodes--;
                         }
                     }, soundDuration * 1000 + 200);
                 } catch (error) {
                     console.warn('Audio playback error:', error);
+                    this.activeAudioNodes--;
                 }
             };
             
@@ -3909,8 +3926,8 @@ class TetrisGame {
                     // Track action for momentum
                     this.trackAction('move');
                     
-                    // Balanced volume for clean sound
-                    const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume;
+                    // Rebalanced volume for clean sound (reduced to prevent distortion)
+                    const adaptiveVolume = 0.3 * this.classicalSystem.adaptiveVolume;
                     
                     // Player interaction sound with quick fade-in/fade-out
                     this.createTechnoSound(freq, 0.2, 'triangle', adaptiveVolume, false, true);
@@ -3923,8 +3940,8 @@ class TetrisGame {
                     // Track action for momentum
                     this.trackAction('rotate');
                     
-                    // Balanced volume with moderate tension boost
-                    const adaptiveVolume = 0.8 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.2);
+                    // Rebalanced volume with moderate tension boost (reduced to prevent distortion)
+                    const adaptiveVolume = 0.4 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.tension * 0.2);
                     
                     // Player interaction sound with quick fade-in/fade-out
                     this.createTechnoSound(freq, 0.3, 'triangle', adaptiveVolume, false, true);
@@ -3937,8 +3954,8 @@ class TetrisGame {
                     // Track action for momentum
                     this.trackAction('drop');
                     
-                    // Enhanced volume with energy boost
-                    const adaptiveVolume = 1.2 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.4);
+                    // Rebalanced volume with energy boost (reduced to prevent distortion)
+                    const adaptiveVolume = 0.6 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.4);
                     
                     // Multi-layered drop sound for more impact
                     // Primary drop sound
@@ -3946,12 +3963,12 @@ class TetrisGame {
                     
                     // Sub-bass layer for weight
                     setTimeout(() => {
-                        this.createTechnoSound(freq * 0.5, 0.8, 'sine', adaptiveVolume * 0.6, false, false);
+                        this.createTechnoSound(freq * 0.5, 0.8, 'sine', adaptiveVolume * 0.4, false, false);
                     }, 50);
                     
                     // Harmonic layer for richness
                     setTimeout(() => {
-                        this.createTechnoSound(freq * 1.5, 0.3, 'triangle', adaptiveVolume * 0.4, false, true);
+                        this.createTechnoSound(freq * 1.5, 0.3, 'triangle', adaptiveVolume * 0.3, false, true);
                     }, 100);
                 },
             lineClear: () => {
@@ -3965,59 +3982,59 @@ class TetrisGame {
                     this.classicalSystem.energy = Math.min(1, this.classicalSystem.energy + 0.2);
                     this.classicalSystem.momentum = Math.min(1, this.classicalSystem.momentum + 0.3);
                     
-                    // Enhanced volume with celebration boost
-                    const adaptiveVolume = 0.8 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.6);
+                    // Rebalanced volume with celebration boost (reduced to prevent distortion)
+                    const adaptiveVolume = 0.4 * this.classicalSystem.adaptiveVolume * (1 + this.classicalSystem.energy * 0.6);
                     
                     // Layer 1: Rumble foundation (low frequency rumble)
-                    this.createTechnoSound(currentChord[0] * 0.25, 1.2, 'sine', adaptiveVolume * 0.8, false, false);
+                    this.createTechnoSound(currentChord[0] * 0.25, 1.2, 'sine', adaptiveVolume * 0.6, false, false);
                     
                     // Layer 2: Chord arpeggio with more impact
                     currentChord.forEach((freq, index) => {
                         setTimeout(() => {
-                            this.createHarmoniousNote(freq, 0.6, adaptiveVolume, 'triangle');
+                            this.createHarmoniousNote(freq, 0.6, adaptiveVolume * 0.8, 'triangle');
                         }, index * 80);
                     });
                     
                     // Layer 3: Percussive impact
                     setTimeout(() => {
-                        this.createTechnoSound(currentChord[0] * 2, 0.3, 'square', adaptiveVolume * 0.9, false, true);
+                        this.createTechnoSound(currentChord[0] * 2, 0.3, 'square', adaptiveVolume * 0.7, false, true);
                     }, 150);
                     
                     // Layer 4: Harmonic sparkles
-                    setTimeout(() => {
+                            setTimeout(() => {
                         for (let i = 0; i < 4; i++) {
                             setTimeout(() => {
-                                this.createTechnoSound(currentChord[0] * (2 + i * 0.5), 0.4, 'triangle', adaptiveVolume * 0.5, false, true);
+                                this.createTechnoSound(currentChord[0] * (2 + i * 0.5), 0.4, 'triangle', adaptiveVolume * 0.4, false, true);
                             }, i * 60);
                         }
                     }, 200);
                     
                     // Layer 5: Resonance tail
                     setTimeout(() => {
-                        this.createHarmoniousNote(currentChord[0] * 0.75, 1.5, adaptiveVolume * 0.6, 'sine');
+                        this.createHarmoniousNote(currentChord[0] * 0.75, 1.5, adaptiveVolume * 0.5, 'sine');
                     }, 400);
                     
                     this.triggerSidechain();
             },
             gameOver: () => {
-                    // Descending layered sound with proper fade-out
-                    this.createTechnoSound(400, 1.0, 'sawtooth', 0.25);
-                    setTimeout(() => this.createTechnoSound(300, 1.0, 'sawtooth', 0.25), 100);
-                    setTimeout(() => this.createTechnoSound(200, 1.0, 'sawtooth', 0.25), 200);
-                    setTimeout(() => this.createTechnoSound(100, 1.0, 'sawtooth', 0.25), 300);
+                    // Descending layered sound with proper fade-out (rebalanced volumes)
+                    this.createTechnoSound(400, 1.0, 'sawtooth', 0.15);
+                    setTimeout(() => this.createTechnoSound(300, 1.0, 'sawtooth', 0.15), 100);
+                    setTimeout(() => this.createTechnoSound(200, 1.0, 'sawtooth', 0.15), 200);
+                    setTimeout(() => this.createTechnoSound(100, 1.0, 'sawtooth', 0.15), 300);
                 },
                 button: () => {
-                    this.createTechnoSound(800, 0.4, 'square', 0.12, false, true);
+                    this.createTechnoSound(800, 0.4, 'square', 0.08, false, true);
                 },
             levelUp: () => {
-                    this.createTechnoSound(600, 0.8, 'triangle', 0.25);
+                    this.createTechnoSound(600, 0.8, 'triangle', 0.15);
                 },
                 tetris: () => {
                     // Enhanced Tetris sound with pronounced celebration for 4-line clear
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     
-                    // Layer 1: Deep rumble foundation
-                    this.createTechnoSound(currentChord[0] * 0.2, 2.0, 'sine', 1.0, false, false);
+                    // Layer 1: Deep rumble foundation (rebalanced volume)
+                    this.createTechnoSound(currentChord[0] * 0.2, 2.0, 'sine', 0.6, false, false);
                     
                     // Layer 2: Ascending triumphant scale
                     const scale = this.classicalSystem.scale;
@@ -4025,7 +4042,7 @@ class TetrisGame {
                     
                     ascendingScale.forEach((freq, index) => {
                         setTimeout(() => {
-                            this.createHarmoniousNote(freq, 0.8, 1.0, 'triangle');
+                            this.createHarmoniousNote(freq, 0.8, 0.6, 'triangle');
                         }, index * 60); // Faster, more rhythmic
                     });
                     
@@ -4033,14 +4050,14 @@ class TetrisGame {
                     setTimeout(() => {
                         for (let i = 0; i < 6; i++) {
                             setTimeout(() => {
-                                this.createTechnoSound(currentChord[0] * (1.5 + i * 0.3), 0.4, 'square', 0.8, false, true);
+                                this.createTechnoSound(currentChord[0] * (1.5 + i * 0.3), 0.4, 'square', 0.5, false, true);
                             }, i * 40);
                         }
                     }, 200);
                     
                     // Layer 4: Harmonic resonance
                     setTimeout(() => {
-                        this.createHarmoniousNote(currentChord[0] * 0.75, 2.5, 0.7, 'sine');
+                        this.createHarmoniousNote(currentChord[0] * 0.75, 2.5, 0.4, 'sine');
                     }, 500);
                 },
                 hardDrop: () => {
@@ -4048,28 +4065,28 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const bassFreq = currentChord[0]; // Bass note
                     
-                    // Multi-layered hard drop sound
+                    // Multi-layered hard drop sound (rebalanced volumes)
                     // Primary impact
-                    this.createTechnoSound(bassFreq, 0.8, 'sawtooth', 1.2, false, false);
+                    this.createTechnoSound(bassFreq, 0.8, 'sawtooth', 0.7, false, false);
                     
                     // Sub-bass impact
                     setTimeout(() => {
-                        this.createTechnoSound(bassFreq * 0.3, 1.5, 'sine', 0.9, false, false);
+                        this.createTechnoSound(bassFreq * 0.3, 1.5, 'sine', 0.5, false, false);
                     }, 20);
                     
                     // Harmonic layer
                     setTimeout(() => {
-                        this.createTechnoSound(bassFreq * 2, 0.6, 'triangle', 0.7, false, true);
+                        this.createTechnoSound(bassFreq * 2, 0.6, 'triangle', 0.4, false, true);
                     }, 50);
                     
                     // Percussive snap
                     setTimeout(() => {
-                        this.createTechnoSound(bassFreq * 4, 0.3, 'square', 0.6, false, true);
+                        this.createTechnoSound(bassFreq * 4, 0.3, 'square', 0.3, false, true);
                     }, 100);
                     
                     // Resonance tail
                     setTimeout(() => {
-                        this.createHarmoniousNote(bassFreq * 0.75, 1.8, 0.5, 'sine');
+                        this.createHarmoniousNote(bassFreq * 0.75, 1.8, 0.3, 'sine');
                     }, 200);
                 },
                 landing: () => {
@@ -4077,23 +4094,23 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const bassFreq = currentChord[0]; // Bass note
                     
-                    // Multi-layered landing sound for more impact
+                    // Multi-layered landing sound for more impact (rebalanced volumes)
                     // Primary impact
-                    this.createTechnoSound(bassFreq, 0.6, 'sawtooth', 0.8, false, false);
+                    this.createTechnoSound(bassFreq, 0.6, 'sawtooth', 0.5, false, false);
                     
                     // Sub-bass rumble
                     setTimeout(() => {
-                        this.createTechnoSound(bassFreq * 0.5, 1.0, 'sine', 0.6, false, false);
+                        this.createTechnoSound(bassFreq * 0.5, 1.0, 'sine', 0.3, false, false);
                     }, 30);
                     
                     // Harmonic resonance
                     setTimeout(() => {
-                        this.createHarmoniousNote(bassFreq * 1.5, 0.8, 0.5, 'triangle');
+                        this.createHarmoniousNote(bassFreq * 1.5, 0.8, 0.3, 'triangle');
                     }, 100);
                     
                     // Percussive click
                     setTimeout(() => {
-                        this.createTechnoSound(bassFreq * 3, 0.2, 'square', 0.4, false, true);
+                        this.createTechnoSound(bassFreq * 3, 0.2, 'square', 0.2, false, true);
                     }, 150);
                 },
                 contact: () => {
@@ -4101,7 +4118,7 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const freq = currentChord[1]; // Middle voice
                     
-                    this.createHarmoniousNote(freq, 0.1, 0.2, 'triangle');
+                    this.createHarmoniousNote(freq, 0.1, 0.1, 'triangle');
                 },
                 startMetronome: () => this.startMetronome(),
                 stopMetronome: () => this.stopMetronome(),
@@ -4110,9 +4127,9 @@ class TetrisGame {
                     const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                     const baseFreq = currentChord[2]; // Top voice
                     
-                    // Scale frequency and volume based on points
+                    // Scale frequency and volume based on points (rebalanced)
                     const freqMultiplier = Math.min(2.5, 1 + (points / 2000));
-                    const volumeMultiplier = Math.min(1.5, 0.5 + (points / 5000));
+                    const volumeMultiplier = Math.min(0.8, 0.3 + (points / 8000)); // Reduced max volume
                     
                     // Multi-layered high score celebration
                     // Primary celebration
@@ -4120,25 +4137,25 @@ class TetrisGame {
                     
                     // Harmonic layers
                     setTimeout(() => {
-                        this.createTechnoSound(baseFreq * freqMultiplier * 1.5, 0.8, 'triangle', volumeMultiplier * 0.7, false, true);
+                        this.createTechnoSound(baseFreq * freqMultiplier * 1.5, 0.8, 'triangle', volumeMultiplier * 0.5, false, true);
                     }, 100);
                     
                     setTimeout(() => {
-                        this.createTechnoSound(baseFreq * freqMultiplier * 2, 0.6, 'triangle', volumeMultiplier * 0.5, false, true);
+                        this.createTechnoSound(baseFreq * freqMultiplier * 2, 0.6, 'triangle', volumeMultiplier * 0.3, false, true);
                     }, 200);
                     
                     // Percussive celebration
                     setTimeout(() => {
                         for (let i = 0; i < 3; i++) {
                             setTimeout(() => {
-                                this.createTechnoSound(baseFreq * freqMultiplier * (2.5 + i * 0.5), 0.4, 'square', volumeMultiplier * 0.6, false, true);
+                                this.createTechnoSound(baseFreq * freqMultiplier * (2.5 + i * 0.5), 0.4, 'square', volumeMultiplier * 0.4, false, true);
                             }, i * 80);
                         }
                     }, 300);
                     
                     // Resonance tail
                     setTimeout(() => {
-                        this.createHarmoniousNote(baseFreq * freqMultiplier * 0.75, 2.0, volumeMultiplier * 0.8, 'sine');
+                        this.createHarmoniousNote(baseFreq * freqMultiplier * 0.75, 2.0, volumeMultiplier * 0.5, 'sine');
                     }, 500);
                 }
             };
@@ -4545,7 +4562,7 @@ class TetrisGame {
                     this.sounds.highScore(lineScore * this.level);
                 }, 300);
             } else {
-                this.sounds.lineClear();
+            this.sounds.lineClear();
             }
             
             // High score sound for significant scoring
