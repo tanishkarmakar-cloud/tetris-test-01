@@ -1952,6 +1952,9 @@ class TetrisGame {
             
             this.createHarmonicFoundation = () => {
                 // Create sustained chord tones for harmonic foundation
+                if (!this.classicalSystem || !this.classicalSystem.chordProgressions || this.classicalSystem.currentChord === undefined) {
+                    return;
+                }
                 const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
                 
                 currentChord.forEach((freq, index) => {
@@ -3540,12 +3543,12 @@ class TetrisGame {
                 this.createEnhancedSoundEffect(frequency, duration, volume, 'move');
             };
             
-            // Create harmonious note - simple, clean, and musical with natural layering
-            this.createHarmoniousNote = (frequency, duration, volume, type = 'sine') => {
-                if (!this.audioInitialized || !this.audioContext) return;
-                
-                // Check audio node limit for performance
-                if (this.activeAudioNodes >= this.maxAudioNodes) return;
+            // Create harmonious note with reverb and proper fade-in/fade-out
+            this.createHarmoniousNote = (frequency, duration, volume = 0.1, type = 'sine') => {
+                if (!this.audioInitialized || !this.audioContext || this.audioContext.state !== 'running') {
+                    this.initAudioContext();
+                    if (!this.audioInitialized || !this.audioContext || this.audioContext.state !== 'running') return;
+                }
                 
                 try {
                     this.activeAudioNodes++;
@@ -3554,25 +3557,24 @@ class TetrisGame {
                     const filter = this.audioContext.createBiquadFilter();
                     const reverb = this.createReverb();
                     
-                    // Set up oscillator
+                    // Set up oscillator with harmonious character
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
                     oscillator.type = type;
                     
-                    // Simple filter for warmth
+                    // Add detuning for warmth
+                    oscillator.detune.setValueAtTime(Math.random() * 10 - 5, this.audioContext.currentTime);
+                    
+                    // Filter for warmth
                     filter.type = 'lowpass';
-                    filter.frequency.setValueAtTime(frequency * 3, this.audioContext.currentTime);
+                    filter.frequency.setValueAtTime(frequency * 2, this.audioContext.currentTime);
                     filter.Q.setValueAtTime(1, this.audioContext.currentTime);
                     
-                    // Connect audio chain with moderate reverb
+                    // Connect through reverb for harmonious sound
                     oscillator.connect(filter);
                     filter.connect(gainNode);
                     gainNode.connect(reverb.convolver);
-                    reverb.reverbGain.connect(this.masterGain || this.audioContext.destination);
                     
-                    // Apply adaptive frequency response based on current spectrum
-                    this.applyAdaptiveEQ(filter, frequency);
-                    
-                    // Reduced duration for better performance
+                    // Longer duration for proper fade-out
                     const soundDuration = Math.max(duration * 1.5, 0.5);
                     
                     // Smooth envelope with fade-in and gradual fade-out
@@ -3583,7 +3585,7 @@ class TetrisGame {
                     gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + soundDuration * 0.3);
                     gainNode.gain.linearRampToValueAtTime(volume * 0.5, now + soundDuration * 0.5);
                     gainNode.gain.linearRampToValueAtTime(volume * 0.3, now + soundDuration * 0.7);
-                    gainNode.gain.linearRampToValueAtTime(volume * 0.1, now + soundDuration * 0.9);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.1, now + soundDuration * 0.8);
                     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + soundDuration);
                     
                     oscillator.start(now);
@@ -3600,12 +3602,14 @@ class TetrisGame {
                             // Ignore cleanup errors
                             this.activeAudioNodes--;
                         }
-                    }, soundDuration * 1000 + 200);
+                    }, soundDuration * 1000 + 500);
                 } catch (error) {
                     console.warn('Harmonious note error:', error);
                     this.activeAudioNodes--;
                 }
             };
+            
+            // Duplicate createHarmoniousNote method removed - using the one above
             
             // Create arpeggiator sound with FM synthesis
             this.createArpeggiatorSound = (frequency, duration, type = 'triangle', volume = 0.1) => {
@@ -3816,7 +3820,7 @@ class TetrisGame {
                     
                     // Set up oscillator with organ-like character
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-                    oscillator.type = type;
+            oscillator.type = type;
             
                     // Add detuning for organ warmth
                     if (!isMetronome) {
@@ -4662,8 +4666,10 @@ class TetrisGame {
         this.sounds.landing();
         
         // Add micro-interaction for subtle feedback
+        if (this.classicalSystem && this.classicalSystem.chordProgressions && this.classicalSystem.currentChord !== undefined) {
         const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
         this.createMicroInteraction(currentChord[1] * 1.5, 0.05, 0.1);
+        }
         
         this.clearLines();
         this.spawnPiece();
@@ -5182,7 +5188,7 @@ class TetrisGame {
         this.sounds.startMetronome();
         this.gameLoop();
     }
-
+    
     /**
      * Toggle pause
      */
