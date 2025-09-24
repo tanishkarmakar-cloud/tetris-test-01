@@ -537,6 +537,11 @@ class TetrisGame {
                 try {
                     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     
+                    // Create master gain node
+                    this.masterGain = this.audioContext.createGain();
+                    this.masterGain.gain.setValueAtTime(0.25, this.audioContext.currentTime);
+                    this.masterGain.connect(this.audioContext.destination);
+                    
                     // Resume audio context if suspended
                     if (this.audioContext.state === 'suspended') {
                         this.audioContext.resume();
@@ -4457,19 +4462,7 @@ class TetrisGame {
         this.drawNextPiece();
     }
     
-    /**
-     * Spawn current piece
-     */
-    spawnPiece() {
-        this.currentPiece = this.nextPiece;
-        this.generateNextPiece();
-        this.canHold = true;
-        
-        if (this.checkCollision(this.currentPiece, 0, 0)) {
-            this.gameOver();
-        }
-        this.draw();
-    }
+    // First spawnPiece method removed - using the complete one below
     
     /**
      * Check collision for piece movement
@@ -5181,11 +5174,21 @@ class TetrisGame {
     }
     
     /**
+     * Resume game from pause
+     */
+    resumeGame() {
+        this.gamePaused = false;
+        this.dropTime = Date.now();
+        this.sounds.startMetronome();
+        this.gameLoop();
+    }
+
+    /**
      * Toggle pause
      */
     togglePause() {
         if (this.gamePaused) {
-            this.startGame();
+            this.resumeGame();
         } else {
             this.pauseGame();
         }
@@ -5308,8 +5311,7 @@ class TetrisGame {
         this.gameScreen.classList.remove('hidden');
         this.gameOverScreen.classList.add('hidden');
         
-        // Stop current background track
-        this.stopBackgroundTrack();
+        // Background track system removed for performance
         
         // Wait for DOM to update, then resize and start
         setTimeout(() => {
