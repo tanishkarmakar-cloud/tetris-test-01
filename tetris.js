@@ -82,10 +82,7 @@ class TetrisGame {
         this.sounds = this.initSounds();
         this.isMobile = this.detectMobile();
         
-        // Initialize background track for main menu (reduced delay for better performance)
-        setTimeout(() => {
-            this.startBackgroundTrack('menu');
-        }, 500);
+        // Background track removed for performance
         
         // Tetris pieces (Tetrominoes) - Standard Tetris piece definitions with colors
         this.pieces = [
@@ -742,18 +739,7 @@ class TetrisGame {
                     tetris: { chord: 6, voice: 'all', tension: 0.5 }      // Triumph
                 },
                 // Simplified background track system
-                backgroundTrack: {
-                    active: false,
-                    intervals: [],
-                    currentBpm: 120,
-                    baseBpm: 120,
-                    maxBpm: 160,
-                    progression: 0, // 0-1, how far through the track
-                    intensity: 0,   // 0-1, current intensity
-                    gameState: 'menu', // 'menu', 'gameplay', 'gameover'
-                    beatCount: 0,
-                    lastBeatTime: 0
-                }
+                // Background track system removed for performance
             };
             
             // Brian Eno-inspired ambient and generative system
@@ -796,95 +782,14 @@ class TetrisGame {
                 this.analyser.connect(this.audioContext.destination);
                 this.sidechainGain.gain.setValueAtTime(1, this.audioContext.currentTime);
                 
-                // Simple metronome with basic beat
-                const beatInterval = 2000; // 2 seconds between beats
-                this.metronomeInterval = setInterval(() => {
-                    if (this.audioContext && this.audioContext.state === 'running') {
-                        this.createTechnoSound(220, 0.1, 'sine', 0.1, true);
-                    }
-                }, beatInterval);
-                
-                // Start subtle background ambient pad
-                this.startBackgroundAmbient();
+                // No metronome or background sounds for now
             };
             
             this.stopMetronome = () => {
-                if (this.metronomeInterval) {
-                    clearInterval(this.metronomeInterval);
-                    this.metronomeInterval = null;
-                }
-                this.stopBackgroundAmbient();
+                // No metronome to stop
             };
             
-            // Simple background ambient system
-            this.backgroundAmbient = {
-                oscillators: [],
-                interval: null
-            };
-            
-            this.startBackgroundAmbient = () => {
-                if (this.backgroundAmbient.interval) return;
-                
-                // Create subtle ambient pad
-                const frequencies = [110, 146.83, 174.61, 220]; // A minor chord
-                
-                frequencies.forEach((freq, index) => {
-                const oscillator = this.audioContext.createOscillator();
-                const gainNode = this.audioContext.createGain();
-                const filter = this.audioContext.createBiquadFilter();
-                    const reverb = this.createEtherealReverb();
-                    
-                    // Set up oscillator
-                    oscillator.frequency.setValueAtTime(freq, this.audioContext.currentTime);
-                    oscillator.type = 'sine';
-                    
-                    // Filter for warmth
-                    filter.type = 'lowpass';
-                    filter.frequency.setValueAtTime(freq * 3, this.audioContext.currentTime);
-                    filter.Q.setValueAtTime(0.5, this.audioContext.currentTime);
-                    
-                    // Connect through reverb
-                    oscillator.connect(filter);
-                    filter.connect(gainNode);
-                    gainNode.connect(reverb.convolver);
-                    
-                    // Very quiet volume
-                    const volume = 0.01 * (1 - index * 0.2); // Decreasing volume for each layer
-                    gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
-                    
-                    // Start oscillator
-                    oscillator.start(this.audioContext.currentTime);
-                    
-                    this.backgroundAmbient.oscillators.push({ oscillator, gainNode, filter });
-                });
-                
-                // Slowly modulate the ambient pad
-                this.backgroundAmbient.interval = setInterval(() => {
-                    this.backgroundAmbient.oscillators.forEach(({ oscillator }, index) => {
-                        const modulation = Math.sin(Date.now() * 0.001 + index) * 5;
-                        oscillator.frequency.setValueAtTime(oscillator.frequency.value + modulation, this.audioContext.currentTime);
-                    });
-                }, 100);
-            };
-            
-            this.stopBackgroundAmbient = () => {
-                if (this.backgroundAmbient.interval) {
-                    clearInterval(this.backgroundAmbient.interval);
-                    this.backgroundAmbient.interval = null;
-                }
-                
-                this.backgroundAmbient.oscillators.forEach(({ oscillator, gainNode, filter }) => {
-                    try {
-                        oscillator.stop();
-                        oscillator.disconnect();
-                        gainNode.disconnect();
-                        filter.disconnect();
-                    } catch (e) {
-                        // Ignore cleanup errors
-                    }
-                });
-                this.backgroundAmbient.oscillators = [];
-            };
+            // Background ambient system removed for performance
             
             // Philip Glass-inspired arpeggiated patterns with additive processes
             
@@ -3894,8 +3799,8 @@ class TetrisGame {
                     if (!this.audioInitialized || !this.audioContext || this.audioContext.state !== 'running') return;
                 }
                 
-                // Check audio node limit for performance
-                if (this.activeAudioNodes >= this.maxAudioNodes) return;
+                // Remove audio node limit - allow layering
+                // if (this.activeAudioNodes >= this.maxAudioNodes) return;
                 
                 try {
                     this.activeAudioNodes++;
@@ -3906,7 +3811,7 @@ class TetrisGame {
                     
                     // Set up oscillator with organ-like character
                     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-            oscillator.type = type;
+                    oscillator.type = type;
             
                     // Add detuning for organ warmth
                     if (!isMetronome) {
@@ -3923,22 +3828,25 @@ class TetrisGame {
                     filter.connect(gainNode);
                     gainNode.connect(reverb.convolver);
                     
-                    // Reduced duration for better performance
-                    const soundDuration = Math.max(duration * 1.5, 0.6);
+                    // Longer duration for proper fade-out
+                    const soundDuration = Math.max(duration * 2, 1.0);
                     
                     // Fade-in and fade-out timing based on interaction type
-                    const attackTime = isPlayerInteraction ? 0.02 : 0.05; // Quicker for player interaction
-                    const releaseStart = isPlayerInteraction ? 0.7 : 0.8; // Earlier release for player interaction
+                    const attackTime = isPlayerInteraction ? 0.01 : 0.02; // Quicker for player interaction
+                    const releaseStart = isPlayerInteraction ? 0.6 : 0.7; // Earlier release for player interaction
                     
                     // Smooth envelope with fade-in and gradual fade-out
                     const now = this.audioContext.currentTime;
                     gainNode.gain.setValueAtTime(0, now);
                     gainNode.gain.linearRampToValueAtTime(volume, now + attackTime); // Fade-in
-                    gainNode.gain.linearRampToValueAtTime(volume * 0.9, now + soundDuration * 0.1);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.95, now + soundDuration * 0.1);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.85, now + soundDuration * 0.2);
                     gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + soundDuration * 0.3);
-                    gainNode.gain.linearRampToValueAtTime(volume * 0.5, now + soundDuration * 0.5);
-                    gainNode.gain.linearRampToValueAtTime(volume * 0.3, now + soundDuration * releaseStart);
-                    gainNode.gain.linearRampToValueAtTime(volume * 0.1, now + soundDuration * 0.9);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.5, now + soundDuration * 0.4);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.3, now + soundDuration * 0.5);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.2, now + soundDuration * releaseStart);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.1, now + soundDuration * 0.8);
+                    gainNode.gain.linearRampToValueAtTime(volume * 0.05, now + soundDuration * 0.9);
                     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + soundDuration);
                     
                     oscillator.start(now);
@@ -3955,21 +3863,34 @@ class TetrisGame {
                             // Ignore cleanup errors
                             this.activeAudioNodes--;
                         }
-                    }, soundDuration * 1000 + 200);
+                    }, soundDuration * 1000 + 500);
                 } catch (error) {
                     console.warn('Audio playback error:', error);
                     this.activeAudioNodes--;
                 }
             };
             
-            // 80s German New Age Techno scales
-            // Simple techno frequencies
-            this.technoFreqs = [100, 150, 200, 250, 300, 400, 500, 600];
+            // Organ scale system - different scales for different sounds
+            this.organScales = {
+                // Major scale frequencies (C major)
+                major: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25],
+                // Minor scale frequencies (A minor)
+                minor: [220.00, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440.00],
+                // Pentatonic scale frequencies (C pentatonic)
+                pentatonic: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25],
+                // Chromatic scale frequencies (C to C)
+                chromatic: [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 440.00, 466.16, 493.88, 523.25],
+                // Low bass frequencies for impact sounds
+                bass: [55.00, 61.74, 69.30, 77.78, 87.31, 98.00, 110.00, 123.47],
+                // High frequencies for sparkle effects
+                sparkle: [880.00, 987.77, 1108.73, 1244.51, 1396.91, 1567.98, 1760.00, 1975.53]
+            };
             
-            this.getNextTechnoFreq = () => {
-                const freq = this.technoFreqs[Math.floor(Math.random() * this.technoFreqs.length)];
-                return freq;
-        };
+            this.getOrganNote = (scaleType = 'major', octave = 1) => {
+                const scale = this.organScales[scaleType];
+                const note = scale[Math.floor(Math.random() * scale.length)];
+                return note * octave;
+            };
             
             // Enhanced harmonious action tracking system (performance optimized)
             this.trackHarmoniousAction = (actionType) => {
@@ -4113,122 +4034,15 @@ class TetrisGame {
                 }, phraseToPlay.length * 120 + 300);
             };
             
-            // Simplified Background Track System (Performance Optimized)
-            this.startBackgroundTrack = (gameState = 'menu') => {
-                if (this.classicalSystem.backgroundTrack.active) return;
-                
-                this.classicalSystem.backgroundTrack.active = true;
-                this.classicalSystem.backgroundTrack.gameState = gameState;
-                this.classicalSystem.backgroundTrack.beatCount = 0;
-                this.classicalSystem.backgroundTrack.lastBeatTime = Date.now();
-                
-                // Initialize track based on game state
-                this.initializeTrackForState(gameState);
-                
-                // Start the simplified track
-                this.playSimplifiedTrack();
-            };
-            
-            this.stopBackgroundTrack = () => {
-                if (!this.classicalSystem.backgroundTrack.active) return;
-                
-                this.classicalSystem.backgroundTrack.active = false;
-                
-                // Clear all intervals
-                this.classicalSystem.backgroundTrack.intervals.forEach(interval => clearInterval(interval));
-                this.classicalSystem.backgroundTrack.intervals = [];
-            };
-            
-            this.initializeTrackForState = (gameState) => {
-                const track = this.classicalSystem.backgroundTrack;
-                
-                switch (gameState) {
-                    case 'menu':
-                        track.currentBpm = track.baseBpm;
-                        track.intensity = 0.2;
-                        break;
-                    case 'gameplay':
-                        track.currentBpm = track.baseBpm + 20;
-                        track.intensity = 0.4;
-                        break;
-                    case 'gameover':
-                        track.currentBpm = track.baseBpm - 20;
-                        track.intensity = 0.15;
-                        break;
-                }
-            };
-            
-            this.playSimplifiedTrack = () => {
-                if (!this.classicalSystem.backgroundTrack.active) return;
-                
-                const track = this.classicalSystem.backgroundTrack;
-                const beatIntervalMs = 60000 / track.currentBpm; // Convert BPM to milliseconds
-                
-                // Main beat loop
-                const beatInterval = setInterval(() => {
-                    if (!track.active) return;
-                    this.playBackgroundBeat();
-                }, beatIntervalMs);
-                
-                // Progressive intensity increase (every 8 beats)
-                const progressionInterval = setInterval(() => {
-                    if (!track.active) return;
-                    this.updateTrackProgression();
-                }, beatIntervalMs * 8);
-                
-                track.intervals.push(beatInterval, progressionInterval);
-            };
-            
-            this.playBackgroundBeat = () => {
-                const track = this.classicalSystem.backgroundTrack;
-                const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
-                
-                track.beatCount++;
-                track.lastBeatTime = Date.now();
-                
-                // Only play beats occasionally to avoid constant noise
-                if (track.beatCount % 2 === 0) { // Every other beat
-                    const freq = currentChord[0] * 0.3; // Low frequency
-                    const volume = 0.08 * track.intensity;
-                    
-                    // Very short, subtle beat
-                    this.createTechnoSound(freq, 0.05, 'sine', volume, true, false);
-                }
-                
-                // Occasional harmonic accent (every 4 beats)
-                if (track.beatCount % 4 === 0 && track.gameState === 'gameplay') {
-                    const freq = currentChord[1] * 0.5;
-                    const volume = 0.06 * track.intensity;
-                    
-                    this.createTechnoSound(freq, 0.08, 'triangle', volume, true, false);
-                }
-            };
-            
-            this.updateTrackProgression = () => {
-                const track = this.classicalSystem.backgroundTrack;
-                
-                // Increase progression slowly
-                track.progression = Math.min(1, track.progression + 0.02);
-                
-                // Increase intensity based on game state and progression
-                if (track.gameState === 'gameplay') {
-                    track.intensity = Math.min(0.6, 0.3 + track.progression * 0.3);
-                    track.currentBpm = Math.min(track.maxBpm, track.baseBpm + track.progression * 20);
-                } else if (track.gameState === 'gameover') {
-                    track.intensity = Math.max(0.1, 0.2 - track.progression * 0.1);
-                    track.currentBpm = Math.max(90, track.baseBpm - track.progression * 10);
-                }
-        };
+            // Background track system removed for performance
         
         return {
                 test: () => {
                     this.createTechnoSound(440, 0.5, 'sine', 0.3);
                 },
                 move: () => {
-                    // Harmonious move sound with voice leading
-                    const action = this.classicalSystem.actionHarmonics.move;
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
-                    const freq = currentChord[1]; // Alto voice for gentle movement
+                    // Organ note from major scale for gentle movement
+                    const freq = this.getOrganNote('major', 1);
                     
                     // Track harmonious action
                     this.trackHarmoniousAction('move');
@@ -4246,10 +4060,8 @@ class TetrisGame {
                     }, 30);
                 },
                 rotate: () => {
-                    // Harmonious rotate sound with bright soprano voice
-                    const action = this.classicalSystem.actionHarmonics.rotate;
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
-                    const freq = currentChord[2]; // Soprano voice for bright rotation
+                    // Organ note from pentatonic scale for bright rotation
+                    const freq = this.getOrganNote('pentatonic', 1.5);
                     
                     // Track harmonious action
                     this.trackHarmoniousAction('rotate');
@@ -4272,10 +4084,8 @@ class TetrisGame {
                     }, 60);
                 },
                 drop: () => {
-                    // Harmonious drop sound with strong bass voice
-                    const action = this.classicalSystem.actionHarmonics.drop;
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
-                    const freq = currentChord[0]; // Bass voice for strong drop
+                    // Organ note from bass scale for strong drop
+                    const freq = this.getOrganNote('bass', 1);
                     
                     // Track harmonious action
                     this.trackHarmoniousAction('drop');
@@ -4304,9 +4114,10 @@ class TetrisGame {
                     }, 120);
                 },
             lineClear: () => {
-                    // Harmonious line clear with full chord celebration
-                    const action = this.classicalSystem.actionHarmonics.lineClear;
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
+                    // Organ notes from major scale for line clear celebration
+                    const bassFreq = this.getOrganNote('bass', 1);
+                    const midFreq = this.getOrganNote('major', 1);
+                    const highFreq = this.getOrganNote('major', 2);
                     
                     // Track harmonious action
                     this.trackHarmoniousAction('lineClear');
@@ -4319,43 +4130,44 @@ class TetrisGame {
                     const adaptiveVolume = 0.35 * this.classicalSystem.adaptiveVolume * 
                         (1 + this.classicalSystem.harmonicMomentum * 0.8 + this.classicalSystem.energy * 0.4);
                     
-                    // Layer 1: Bass rumble foundation (all voices)
-                    this.createTechnoSound(currentChord[0] * 0.25, 1.0, 'sine', adaptiveVolume * 0.5, false, false);
+                    // Layer 1: Bass rumble foundation
+                    this.createTechnoSound(bassFreq * 0.25, 1.0, 'sine', adaptiveVolume * 0.5, false, false);
                     
-                    // Layer 2: Full chord arpeggio with voice leading
-                    currentChord.forEach((freq, index) => {
+                    // Layer 2: Arpeggio with organ notes
+                    [bassFreq, midFreq, highFreq].forEach((freq, index) => {
                         setTimeout(() => {
-                            const voiceVolume = adaptiveVolume * (0.6 + index * 0.1); // Increasing volume per voice
-                            this.createHarmoniousNote(freq, 0.5, voiceVolume, 'triangle');
+                            const voiceVolume = adaptiveVolume * (0.6 + index * 0.1);
+                            this.createTechnoSound(freq, 0.5, 'triangle', voiceVolume, false, false);
                         }, index * 60);
                     });
                     
                     // Layer 3: Percussive celebration
                     setTimeout(() => {
-                        this.createTechnoSound(currentChord[1] * 2, 0.25, 'square', adaptiveVolume * 0.6, false, true);
+                        this.createTechnoSound(midFreq * 2, 0.25, 'square', adaptiveVolume * 0.6, false, true);
                     }, 150);
                     
-                    // Layer 4: Harmonic sparkles (soprano voice)
+                    // Layer 4: Harmonic sparkles
                     setTimeout(() => {
                         for (let i = 0; i < 3; i++) {
                             setTimeout(() => {
-                                this.createTechnoSound(currentChord[2] * (1.5 + i * 0.3), 0.3, 'triangle', adaptiveVolume * 0.4, false, true);
+                                this.createTechnoSound(highFreq * (1.5 + i * 0.3), 0.3, 'triangle', adaptiveVolume * 0.4, false, true);
                             }, i * 50);
                         }
                     }, 200);
                     
-                    // Layer 5: Resonance tail with harmonic momentum
+                    // Layer 5: Resonance tail
                     setTimeout(() => {
                         const resonanceVolume = adaptiveVolume * 0.4 * (1 + this.classicalSystem.harmonicMomentum * 0.5);
-                        this.createHarmoniousNote(currentChord[0] * 0.75, 1.2, resonanceVolume, 'sine');
+                        this.createTechnoSound(bassFreq * 0.75, 1.2, 'sine', resonanceVolume, false, false);
                     }, 350);
                     
                     this.triggerSidechain();
             },
             gameOver: () => {
-                    // Harmonious game over sound with descending resolution
-                    const action = this.classicalSystem.actionHarmonics.land; // Use resolution action
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
+                    // Organ notes from minor scale for game over resolution
+                    const highFreq = this.getOrganNote('minor', 2);
+                    const midFreq = this.getOrganNote('minor', 1);
+                    const lowFreq = this.getOrganNote('bass', 1);
                     
                     // Track harmonious action (final resolution)
                     this.trackHarmoniousAction('land');
@@ -4363,17 +4175,15 @@ class TetrisGame {
                     // Volume with harmonic resolution
                     const adaptiveVolume = 0.2 * this.classicalSystem.adaptiveVolume;
                     
-                    // Descending harmonious sequence using chord tones
-                    this.createTechnoSound(currentChord[2], 1.0, 'triangle', adaptiveVolume, false, false);
-                    setTimeout(() => this.createTechnoSound(currentChord[1], 1.0, 'triangle', adaptiveVolume, false, false), 150);
-                    setTimeout(() => this.createTechnoSound(currentChord[0], 1.0, 'triangle', adaptiveVolume, false, false), 300);
-                    setTimeout(() => this.createTechnoSound(currentChord[0] * 0.5, 1.0, 'sine', adaptiveVolume, false, false), 450);
+                    // Descending harmonious sequence using organ notes
+                    this.createTechnoSound(highFreq, 1.0, 'triangle', adaptiveVolume, false, false);
+                    setTimeout(() => this.createTechnoSound(midFreq, 1.0, 'triangle', adaptiveVolume, false, false), 150);
+                    setTimeout(() => this.createTechnoSound(lowFreq, 1.0, 'triangle', adaptiveVolume, false, false), 300);
+                    setTimeout(() => this.createTechnoSound(lowFreq * 0.5, 1.0, 'sine', adaptiveVolume, false, false), 450);
                 },
                 button: () => {
-                    // Harmonious button sound with gentle interaction
-                    const action = this.classicalSystem.actionHarmonics.move; // Use gentle movement action
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
-                    const freq = currentChord[1]; // Alto voice for gentle interaction
+                    // Organ note from major scale for gentle button interaction
+                    const freq = this.getOrganNote('major', 1);
                     
                     // Track harmonious action (gentle interaction)
                     this.trackHarmoniousAction('move');
@@ -4386,9 +4196,10 @@ class TetrisGame {
                     this.createTechnoSound(freq, 0.3, 'triangle', adaptiveVolume, false, true);
                 },
             levelUp: () => {
-                    // Harmonious level up sound with ascending celebration
-                    const action = this.classicalSystem.actionHarmonics.lineClear; // Use celebration action
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
+                    // Organ notes from major scale for ascending level up celebration
+                    const lowFreq = this.getOrganNote('major', 1);
+                    const midFreq = this.getOrganNote('major', 1.5);
+                    const highFreq = this.getOrganNote('major', 2);
                     
                     // Track harmonious action (celebration)
                     this.trackHarmoniousAction('lineClear');
@@ -4397,16 +4208,17 @@ class TetrisGame {
                     const adaptiveVolume = 0.2 * this.classicalSystem.adaptiveVolume * 
                         (1 + this.classicalSystem.harmonicMomentum * 0.4 + this.classicalSystem.energy * 0.3);
                     
-                    // Ascending harmonious sequence using chord tones
-                    this.createTechnoSound(currentChord[0], 0.6, 'triangle', adaptiveVolume, false, false);
-                    setTimeout(() => this.createTechnoSound(currentChord[1], 0.6, 'triangle', adaptiveVolume, false, false), 100);
-                    setTimeout(() => this.createTechnoSound(currentChord[2], 0.6, 'triangle', adaptiveVolume, false, false), 200);
-                    setTimeout(() => this.createTechnoSound(currentChord[2] * 1.5, 0.8, 'sine', adaptiveVolume, false, false), 300);
+                    // Ascending harmonious sequence using organ notes
+                    this.createTechnoSound(lowFreq, 0.6, 'triangle', adaptiveVolume, false, false);
+                    setTimeout(() => this.createTechnoSound(midFreq, 0.6, 'triangle', adaptiveVolume, false, false), 100);
+                    setTimeout(() => this.createTechnoSound(highFreq, 0.6, 'triangle', adaptiveVolume, false, false), 200);
+                    setTimeout(() => this.createTechnoSound(highFreq * 1.5, 0.8, 'sine', adaptiveVolume, false, false), 300);
                 },
                 tetris: () => {
-                    // Harmonious Tetris sound with triumphant celebration
-                    const action = this.classicalSystem.actionHarmonics.tetris;
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
+                    // Organ notes from major scale for triumphant Tetris celebration
+                    const bassFreq = this.getOrganNote('bass', 1);
+                    const midFreq = this.getOrganNote('major', 1);
+                    const highFreq = this.getOrganNote('major', 2);
                     
                     // Track harmonious action (triumph)
                     this.trackHarmoniousAction('tetris');
@@ -4419,17 +4231,16 @@ class TetrisGame {
                     const adaptiveVolume = 0.4 * this.classicalSystem.adaptiveVolume * 
                         (1 + this.classicalSystem.harmonicMomentum * 1.2 + this.classicalSystem.energy * 0.8);
                     
-                    // Layer 1: Deep rumble foundation (all voices)
-                    this.createTechnoSound(currentChord[0] * 0.2, 1.8, 'sine', adaptiveVolume * 0.6, false, false);
+                    // Layer 1: Deep rumble foundation
+                    this.createTechnoSound(bassFreq * 0.2, 1.8, 'sine', adaptiveVolume * 0.6, false, false);
                     
-                    // Layer 2: Ascending triumphant scale with voice leading
-                    const scale = this.classicalSystem.scale;
-                    const ascendingScale = scale.slice(0, 4).concat(scale.slice(0, 4).map(f => f * 2));
+                    // Layer 2: Ascending triumphant scale with organ notes
+                    const ascendingScale = [bassFreq, midFreq, highFreq, midFreq * 1.5, highFreq * 1.5, midFreq * 2, highFreq * 2];
                     
                     ascendingScale.forEach((freq, index) => {
                         setTimeout(() => {
                             const voiceVolume = adaptiveVolume * (0.5 + index * 0.1);
-                            this.createHarmoniousNote(freq, 0.6, voiceVolume, 'triangle');
+                            this.createTechnoSound(freq, 0.6, 'triangle', voiceVolume, false, false);
                         }, index * 50); // Faster, more rhythmic
                     });
                     
@@ -4438,7 +4249,7 @@ class TetrisGame {
                         for (let i = 0; i < 5; i++) {
                             setTimeout(() => {
                                 const percVolume = adaptiveVolume * 0.5 * (1 + this.classicalSystem.harmonicMomentum * 0.3);
-                                this.createTechnoSound(currentChord[1] * (1.5 + i * 0.3), 0.3, 'square', percVolume, false, true);
+                                this.createTechnoSound(midFreq * (1.5 + i * 0.3), 0.3, 'square', percVolume, false, true);
                             }, i * 35);
                         }
                     }, 150);
@@ -4446,14 +4257,12 @@ class TetrisGame {
                     // Layer 4: Harmonic resonance with maximum momentum
                     setTimeout(() => {
                         const resonanceVolume = adaptiveVolume * 0.4 * (1 + this.classicalSystem.harmonicMomentum * 0.8);
-                        this.createHarmoniousNote(currentChord[0] * 0.75, 2.0, resonanceVolume, 'sine');
+                        this.createTechnoSound(bassFreq * 0.75, 2.0, 'sine', resonanceVolume, false, false);
                     }, 400);
                 },
                 hardDrop: () => {
-                    // Harmonious hard drop sound with strong impact
-                    const action = this.classicalSystem.actionHarmonics.drop;
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
-                    const bassFreq = currentChord[0]; // Bass voice for strong impact
+                    // Organ note from bass scale for strong hard drop impact
+                    const bassFreq = this.getOrganNote('bass', 1);
                     
                     // Track harmonious action (strong drop)
                     this.trackHarmoniousAction('drop');
@@ -4484,14 +4293,12 @@ class TetrisGame {
                     // Resonance tail with harmonic momentum
                     setTimeout(() => {
                         const resonanceVolume = adaptiveVolume * 0.3 * (1 + this.classicalSystem.harmonicMomentum * 0.4);
-                        this.createHarmoniousNote(bassFreq * 0.75, 1.5, resonanceVolume, 'sine');
+                        this.createTechnoSound(bassFreq * 0.75, 1.5, 'sine', resonanceVolume, false, false);
                     }, 150);
                 },
                 landing: () => {
-                    // Harmonious landing sound with resolution
-                    const action = this.classicalSystem.actionHarmonics.land;
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
-                    const bassFreq = currentChord[0]; // Bass note for resolution
+                    // Organ note from bass scale for landing resolution
+                    const bassFreq = this.getOrganNote('bass', 1);
                     
                     // Track harmonious action (resolution)
                     this.trackHarmoniousAction('land');
@@ -4511,7 +4318,7 @@ class TetrisGame {
                     
                     // Harmonic resonance (alto voice)
                     setTimeout(() => {
-                        this.createHarmoniousNote(bassFreq * 1.5, 0.6, adaptiveVolume * 0.5, 'triangle');
+                        this.createTechnoSound(bassFreq * 1.5, 0.6, 'triangle', adaptiveVolume * 0.5, false, false);
                     }, 80);
                     
                     // Percussive click (soprano voice)
@@ -4520,10 +4327,8 @@ class TetrisGame {
                     }, 120);
                 },
                 contact: () => {
-                    // Harmonious contact sound with gentle resolution
-                    const action = this.classicalSystem.actionHarmonics.land;
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
-                    const freq = currentChord[1]; // Alto voice for gentle contact
+                    // Organ note from major scale for gentle contact
+                    const freq = this.getOrganNote('major', 1);
                     
                     // Track harmonious action (gentle resolution)
                     this.trackHarmoniousAction('land');
@@ -4531,15 +4336,13 @@ class TetrisGame {
                     // Very gentle volume for subtle contact
                     const adaptiveVolume = 0.08 * this.classicalSystem.adaptiveVolume;
                     
-                    this.createHarmoniousNote(freq, 0.08, adaptiveVolume, 'triangle');
+                    this.createTechnoSound(freq, 0.08, 'triangle', adaptiveVolume, false, false);
                 },
                 startMetronome: () => this.startMetronome(),
                 stopMetronome: () => this.stopMetronome(),
                 highScore: (points) => {
-                    // Harmonious high score celebration with adaptive scaling
-                    const action = this.classicalSystem.actionHarmonics.tetris; // Use triumph action
-                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
-                    const baseFreq = currentChord[2]; // Soprano voice for celebration
+                    // Organ notes from sparkle scale for high score celebration
+                    const baseFreq = this.getOrganNote('sparkle', 1);
                     
                     // Track harmonious action (celebration)
                     this.trackHarmoniousAction('tetris');
@@ -4573,7 +4376,7 @@ class TetrisGame {
                     
                     // Resonance tail
                     setTimeout(() => {
-                        this.createHarmoniousNote(baseFreq * freqMultiplier * 0.75, 2.0, volumeMultiplier * 0.5, 'sine');
+                        this.createTechnoSound(baseFreq * freqMultiplier * 0.75, 2.0, 'sine', volumeMultiplier * 0.5, false, false);
                     }, 500);
                 }
             };
@@ -5357,8 +5160,7 @@ class TetrisGame {
         this.dropTime = Date.now();
         this.sounds.startMetronome();
         
-        // Start progressive background track for gameplay
-        this.startBackgroundTrack('gameplay');
+        // Background track removed for performance
         
         // Spawn the first piece
         this.spawnPiece();
@@ -5448,8 +5250,7 @@ class TetrisGame {
             this.gameLoopId = null;
         }
         
-        // Switch background track to game over state
-        this.startBackgroundTrack('gameover');
+        // Background track removed for performance
         
         // Check for high score
         if (this.score > this.highScore) {
@@ -5489,8 +5290,7 @@ class TetrisGame {
         this.gameOverScreen.classList.add('hidden');
         this.pauseGame();
         
-        // Start background track for main menu
-        this.startBackgroundTrack('menu');
+        // Background track removed for performance
     }
     
     showInstructionsScreen() {
