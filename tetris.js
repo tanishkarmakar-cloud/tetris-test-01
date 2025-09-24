@@ -82,6 +82,11 @@ class TetrisGame {
         this.sounds = this.initSounds();
         this.isMobile = this.detectMobile();
         
+        // Initialize background track for main menu
+        setTimeout(() => {
+            this.startBackgroundTrack('menu');
+        }, 1000);
+        
         // Tetris pieces (Tetrominoes) - Standard Tetris piece definitions with colors
         this.pieces = [
             {
@@ -735,6 +740,26 @@ class TetrisGame {
                     land: { chord: 0, voice: 'tenor', tension: -0.2 },    // Resolution
                     lineClear: { chord: 5, voice: 'all', tension: 0.4 },  // Celebration
                     tetris: { chord: 6, voice: 'all', tension: 0.5 }      // Triumph
+                },
+                // Progressive background track system
+                backgroundTrack: {
+                    active: false,
+                    oscillators: [],
+                    intervals: [],
+                    currentBpm: 120,
+                    baseBpm: 120,
+                    maxBpm: 180,
+                    progression: 0, // 0-1, how far through the track
+                    intensity: 0,   // 0-1, current intensity
+                    gameState: 'menu', // 'menu', 'gameplay', 'gameover'
+                    layers: {
+                        kick: { active: false, oscillator: null, gain: null },
+                        snare: { active: false, oscillator: null, gain: null },
+                        hihat: { active: false, oscillator: null, gain: null },
+                        bass: { active: false, oscillator: null, gain: null },
+                        lead: { active: false, oscillator: null, gain: null },
+                        pad: { active: false, oscillator: null, gain: null }
+                    }
                 }
             };
             
@@ -4093,6 +4118,218 @@ class TetrisGame {
                 setTimeout(() => {
                     this.classicalSystem.melodicPhrase = [];
                 }, phraseToPlay.length * 120 + 300);
+            };
+            
+            // Progressive Background Track System
+            this.startBackgroundTrack = (gameState = 'menu') => {
+                if (this.classicalSystem.backgroundTrack.active) return;
+                
+                this.classicalSystem.backgroundTrack.active = true;
+                this.classicalSystem.backgroundTrack.gameState = gameState;
+                
+                // Initialize track based on game state
+                this.initializeTrackForState(gameState);
+                
+                // Start the progressive track
+                this.playProgressiveTrack();
+            };
+            
+            this.stopBackgroundTrack = () => {
+                if (!this.classicalSystem.backgroundTrack.active) return;
+                
+                this.classicalSystem.backgroundTrack.active = false;
+                
+                // Stop all layers
+                Object.values(this.classicalSystem.backgroundTrack.layers).forEach(layer => {
+                    if (layer.oscillator) {
+                        layer.oscillator.stop();
+                        layer.oscillator = null;
+                    }
+                    if (layer.gain) {
+                        layer.gain.disconnect();
+                        layer.gain = null;
+                    }
+                    layer.active = false;
+                });
+                
+                // Clear intervals
+                this.classicalSystem.backgroundTrack.intervals.forEach(interval => clearInterval(interval));
+                this.classicalSystem.backgroundTrack.intervals = [];
+            };
+            
+            this.initializeTrackForState = (gameState) => {
+                const track = this.classicalSystem.backgroundTrack;
+                
+                switch (gameState) {
+                    case 'menu':
+                        track.currentBpm = track.baseBpm;
+                        track.intensity = 0.3;
+                        this.activateLayer('kick');
+                        this.activateLayer('pad');
+                        break;
+                    case 'gameplay':
+                        track.currentBpm = track.baseBpm + 20;
+                        track.intensity = 0.6;
+                        this.activateLayer('kick');
+                        this.activateLayer('snare');
+                        this.activateLayer('bass');
+                        this.activateLayer('pad');
+                        break;
+                    case 'gameover':
+                        track.currentBpm = track.baseBpm - 20;
+                        track.intensity = 0.2;
+                        this.activateLayer('kick');
+                        this.activateLayer('pad');
+                        break;
+                }
+            };
+            
+            this.activateLayer = (layerName) => {
+                const layer = this.classicalSystem.backgroundTrack.layers[layerName];
+                if (layer.active) return;
+                
+                layer.active = true;
+                layer.oscillator = this.audioContext.createOscillator();
+                layer.gain = this.audioContext.createGain();
+                
+                // Set up layer based on type
+                this.setupLayer(layerName, layer);
+                
+                // Connect to master gain
+                layer.oscillator.connect(layer.gain);
+                layer.gain.connect(this.masterGain || this.audioContext.destination);
+                
+                layer.oscillator.start();
+            };
+            
+            this.setupLayer = (layerName, layer) => {
+                const track = this.classicalSystem.backgroundTrack;
+                const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                
+                switch (layerName) {
+                    case 'kick':
+                        layer.oscillator.type = 'sine';
+                        layer.oscillator.frequency.setValueAtTime(currentChord[0] * 0.5, this.audioContext.currentTime);
+                        layer.gain.gain.setValueAtTime(0.1 * track.intensity, this.audioContext.currentTime);
+                        break;
+                    case 'snare':
+                        layer.oscillator.type = 'triangle';
+                        layer.oscillator.frequency.setValueAtTime(currentChord[1] * 2, this.audioContext.currentTime);
+                        layer.gain.gain.setValueAtTime(0.08 * track.intensity, this.audioContext.currentTime);
+                        break;
+                    case 'hihat':
+                        layer.oscillator.type = 'square';
+                        layer.oscillator.frequency.setValueAtTime(currentChord[2] * 4, this.audioContext.currentTime);
+                        layer.gain.gain.setValueAtTime(0.05 * track.intensity, this.audioContext.currentTime);
+                        break;
+                    case 'bass':
+                        layer.oscillator.type = 'sawtooth';
+                        layer.oscillator.frequency.setValueAtTime(currentChord[0], this.audioContext.currentTime);
+                        layer.gain.gain.setValueAtTime(0.12 * track.intensity, this.audioContext.currentTime);
+                        break;
+                    case 'lead':
+                        layer.oscillator.type = 'triangle';
+                        layer.oscillator.frequency.setValueAtTime(currentChord[2], this.audioContext.currentTime);
+                        layer.gain.gain.setValueAtTime(0.1 * track.intensity, this.audioContext.currentTime);
+                        break;
+                    case 'pad':
+                        layer.oscillator.type = 'sine';
+                        layer.oscillator.frequency.setValueAtTime(currentChord[1], this.audioContext.currentTime);
+                        layer.gain.gain.setValueAtTime(0.06 * track.intensity, this.audioContext.currentTime);
+                        break;
+                }
+            };
+            
+            this.playProgressiveTrack = () => {
+                if (!this.classicalSystem.backgroundTrack.active) return;
+                
+                const track = this.classicalSystem.backgroundTrack;
+                const beatInterval = 60000 / track.currentBpm; // Convert BPM to milliseconds
+                
+                // Kick drum on every beat
+                const kickInterval = setInterval(() => {
+                    if (!track.active) return;
+                    this.playKickDrum();
+                }, beatInterval);
+                
+                // Snare on beats 2 and 4
+                const snareInterval = setInterval(() => {
+                    if (!track.active) return;
+                    this.playSnare();
+                }, beatInterval * 2);
+                
+                // Hi-hat on off-beats
+                const hihatInterval = setInterval(() => {
+                    if (!track.active) return;
+                    this.playHihat();
+                }, beatInterval / 2);
+                
+                // Progressive intensity increase
+                const progressionInterval = setInterval(() => {
+                    if (!track.active) return;
+                    this.updateTrackProgression();
+                }, beatInterval * 4);
+                
+                track.intervals.push(kickInterval, snareInterval, hihatInterval, progressionInterval);
+            };
+            
+            this.playKickDrum = () => {
+                const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                const freq = currentChord[0] * 0.5;
+                const volume = 0.15 * this.classicalSystem.backgroundTrack.intensity;
+                
+                this.createTechnoSound(freq, 0.1, 'sine', volume, true, false);
+            };
+            
+            this.playSnare = () => {
+                const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                const freq = currentChord[1] * 2;
+                const volume = 0.12 * this.classicalSystem.backgroundTrack.intensity;
+                
+                this.createTechnoSound(freq, 0.05, 'triangle', volume, true, false);
+            };
+            
+            this.playHihat = () => {
+                const currentChord = this.classicalSystem.chordProgressions[this.classicalSystem.currentChord];
+                const freq = currentChord[2] * 4;
+                const volume = 0.08 * this.classicalSystem.backgroundTrack.intensity;
+                
+                this.createTechnoSound(freq, 0.03, 'square', volume, true, false);
+            };
+            
+            this.updateTrackProgression = () => {
+                const track = this.classicalSystem.backgroundTrack;
+                
+                // Increase progression
+                track.progression = Math.min(1, track.progression + 0.05);
+                
+                // Increase intensity based on game state and progression
+                if (track.gameState === 'gameplay') {
+                    track.intensity = Math.min(0.8, 0.4 + track.progression * 0.4);
+                    track.currentBpm = Math.min(track.maxBpm, track.baseBpm + track.progression * 40);
+                } else if (track.gameState === 'gameover') {
+                    track.intensity = Math.max(0.1, 0.3 - track.progression * 0.2);
+                    track.currentBpm = Math.max(80, track.baseBpm - track.progression * 20);
+                }
+                
+                // Update layer volumes
+                Object.values(track.layers).forEach(layer => {
+                    if (layer.active && layer.gain) {
+                        const baseVolume = this.getLayerBaseVolume(layer);
+                        layer.gain.gain.setValueAtTime(baseVolume * track.intensity, this.audioContext.currentTime);
+                    }
+                });
+            };
+            
+            this.getLayerBaseVolume = (layer) => {
+                // Return base volume for each layer type
+                if (layer === this.classicalSystem.backgroundTrack.layers.kick) return 0.1;
+                if (layer === this.classicalSystem.backgroundTrack.layers.snare) return 0.08;
+                if (layer === this.classicalSystem.backgroundTrack.layers.hihat) return 0.05;
+                if (layer === this.classicalSystem.backgroundTrack.layers.bass) return 0.12;
+                if (layer === this.classicalSystem.backgroundTrack.layers.lead) return 0.1;
+                if (layer === this.classicalSystem.backgroundTrack.layers.pad) return 0.06;
+                return 0.05;
         };
         
         return {
@@ -4228,17 +4465,55 @@ class TetrisGame {
                     this.triggerSidechain();
             },
             gameOver: () => {
-                    // Descending layered sound with proper fade-out (rebalanced volumes)
-                    this.createTechnoSound(400, 1.0, 'sawtooth', 0.15);
-                    setTimeout(() => this.createTechnoSound(300, 1.0, 'sawtooth', 0.15), 100);
-                    setTimeout(() => this.createTechnoSound(200, 1.0, 'sawtooth', 0.15), 200);
-                    setTimeout(() => this.createTechnoSound(100, 1.0, 'sawtooth', 0.15), 300);
+                    // Harmonious game over sound with descending resolution
+                    const action = this.classicalSystem.actionHarmonics.land; // Use resolution action
+                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
+                    
+                    // Track harmonious action (final resolution)
+                    this.trackHarmoniousAction('land');
+                    
+                    // Volume with harmonic resolution
+                    const adaptiveVolume = 0.2 * this.classicalSystem.adaptiveVolume;
+                    
+                    // Descending harmonious sequence using chord tones
+                    this.createTechnoSound(currentChord[2], 1.0, 'triangle', adaptiveVolume, false, false);
+                    setTimeout(() => this.createTechnoSound(currentChord[1], 1.0, 'triangle', adaptiveVolume, false, false), 150);
+                    setTimeout(() => this.createTechnoSound(currentChord[0], 1.0, 'triangle', adaptiveVolume, false, false), 300);
+                    setTimeout(() => this.createTechnoSound(currentChord[0] * 0.5, 1.0, 'sine', adaptiveVolume, false, false), 450);
                 },
                 button: () => {
-                    this.createTechnoSound(800, 0.4, 'square', 0.08, false, true);
+                    // Harmonious button sound with gentle interaction
+                    const action = this.classicalSystem.actionHarmonics.move; // Use gentle movement action
+                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
+                    const freq = currentChord[1]; // Alto voice for gentle interaction
+                    
+                    // Track harmonious action (gentle interaction)
+                    this.trackHarmoniousAction('move');
+                    
+                    // Volume with harmonic momentum
+                    const adaptiveVolume = 0.1 * this.classicalSystem.adaptiveVolume * 
+                        (1 + this.classicalSystem.harmonicMomentum * 0.2);
+                    
+                    // Gentle button sound with quick fade
+                    this.createTechnoSound(freq, 0.3, 'triangle', adaptiveVolume, false, true);
                 },
             levelUp: () => {
-                    this.createTechnoSound(600, 0.8, 'triangle', 0.15);
+                    // Harmonious level up sound with ascending celebration
+                    const action = this.classicalSystem.actionHarmonics.lineClear; // Use celebration action
+                    const currentChord = this.classicalSystem.chordProgressions[action.chord];
+                    
+                    // Track harmonious action (celebration)
+                    this.trackHarmoniousAction('lineClear');
+                    
+                    // Volume with harmonic momentum and energy
+                    const adaptiveVolume = 0.2 * this.classicalSystem.adaptiveVolume * 
+                        (1 + this.classicalSystem.harmonicMomentum * 0.4 + this.classicalSystem.energy * 0.3);
+                    
+                    // Ascending harmonious sequence using chord tones
+                    this.createTechnoSound(currentChord[0], 0.6, 'triangle', adaptiveVolume, false, false);
+                    setTimeout(() => this.createTechnoSound(currentChord[1], 0.6, 'triangle', adaptiveVolume, false, false), 100);
+                    setTimeout(() => this.createTechnoSound(currentChord[2], 0.6, 'triangle', adaptiveVolume, false, false), 200);
+                    setTimeout(() => this.createTechnoSound(currentChord[2] * 1.5, 0.8, 'sine', adaptiveVolume, false, false), 300);
                 },
                 tetris: () => {
                     // Harmonious Tetris sound with triumphant celebration
@@ -5194,6 +5469,9 @@ class TetrisGame {
         this.dropTime = Date.now();
         this.sounds.startMetronome();
         
+        // Start progressive background track for gameplay
+        this.startBackgroundTrack('gameplay');
+        
         // Spawn the first piece
         this.spawnPiece();
         
@@ -5282,6 +5560,9 @@ class TetrisGame {
             this.gameLoopId = null;
         }
         
+        // Switch background track to game over state
+        this.startBackgroundTrack('gameover');
+        
         // Check for high score
         if (this.score > this.highScore) {
             this.highScore = this.score;
@@ -5319,6 +5600,9 @@ class TetrisGame {
         this.gameScreen.classList.add('hidden');
         this.gameOverScreen.classList.add('hidden');
         this.pauseGame();
+        
+        // Start background track for main menu
+        this.startBackgroundTrack('menu');
     }
     
     showInstructionsScreen() {
@@ -5335,6 +5619,9 @@ class TetrisGame {
         this.instructionsScreen.classList.add('hidden');
         this.gameScreen.classList.remove('hidden');
         this.gameOverScreen.classList.add('hidden');
+        
+        // Stop current background track
+        this.stopBackgroundTrack();
         
         // Wait for DOM to update, then resize and start
         setTimeout(() => {
